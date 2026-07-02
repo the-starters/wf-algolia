@@ -1,0 +1,22 @@
+{
+  "name": "@the-starters/wf-algolia",
+  "version": "1.0.4-re.0",
+  "description": "Reverse-engineered fork of @candid-leap/wf-algolia (ISC) — attribute-driven Algolia search for Webflow.",
+  "license": "ISC",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "esbuild src/app.carved.js --bundle --format=iife --target=es2020 --outfile=dist/index.js",
+    "build:min": "esbuild src/app.carved.js --bundle --minify --format=iife --target=es2020 --outfile=dist/index.min.js"
+  },
+  "dependencies": {
+    "@algolia/client-search": "^4.27.0",
+    "@algolia/recommend": "^4.27.0",
+    "algoliasearch": "^4.27.0",
+    "search-insights": "^2.17.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "eslint": "^9.19.0"
+  }
+}

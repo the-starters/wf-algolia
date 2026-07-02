@@ -1,0 +1,78 @@
+{
+  "name": "@candid-leap/wf-algolia",
+  "version": "1.0.4",
+  "description": "Attribute-driven Algolia search integration for Webflow sites. CDN script.",
+  "homepage": "https://github.com/Candid-leap/webflow-algolia-app#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Candid-leap/webflow-algolia-app.git",
+    "directory": "packages/script"
+  },
+  "bugs": {
+    "url": "https://github.com/Candid-leap/webflow-algolia-app/issues"
+  },
+  "license": "ISC",
+  "author": {
+    "name": "Candidleap"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "unpkg": "./dist/index.js",
+  "jsdelivr": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": [
+    "./dist/index.js"
+  ],
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts"
+  ],
+  "dependencies": {
+    "@algolia/client-search": "^4.27.0",
+    "@algolia/recommend": "^4.27.0",
+    "@finsweet/ts-utils": "^0.40.0",
+    "algoliasearch": "^4.27.0",
+    "search-insights": "^2.17.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.19.0",
+    "@finsweet/eslint-config": "^3.0.3",
+    "@finsweet/tsconfig": "^1.4.2",
+    "@playwright/test": "^1.50.1",
+    "cross-env": "^7.0.3",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.19.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "jsdom": "^25.0.1",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.23.0",
+    "vitest": "^4.0.16"
+  },
+  "engines": {
+    "pnpm": ">=10"
+  },
+  "publishConfig": {
+    "provenance": false,
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development node ./bin/build.js",
+    "build": "cross-env NODE_ENV=production node ./bin/build.js && cp src/global.d.ts dist/index.d.ts",
+    "lint": "eslint ./src && prettier --check ./src",
+    "lint:fix": "eslint ./src --fix",
+    "check": "tsc --noEmit",
+    "format": "prettier --write ./src",
+    "test": "pnpm test:unit && node bin/copy-test-harness.js && playwright test",
+    "test:unit": "vitest run",
+    "test:ui": "playwright test --ui",
+    "clean": "rm -rf dist test-results playwright-report",
+    "website:dev": "pnpm --dir website start",
+    "website:build": "pnpm --dir website build",
+    "website:serve": "pnpm --dir website serve",
+    "update": "pnpm update -i -L -r"
+  }
+}
