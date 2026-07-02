@@ -6,8 +6,8 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "esbuild src/app.carved.js --bundle --format=iife --target=es2020 --outfile=dist/index.js",
-    "build:min": "esbuild src/app.carved.js --bundle --minify --format=iife --target=es2020 --outfile=dist/index.min.js"
+    "build": "esbuild src/index.js --bundle --format=iife --target=es2020 --outfile=dist/index.js",
+    "build:min": "esbuild src/index.js --bundle --minify --format=iife --target=es2020 --outfile=dist/index.min.js"
   },
   "dependencies": {
     "@algolia/client-search": "^4.27.0",

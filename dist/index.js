@@ -1595,6 +1595,78 @@
     }
   });
 
+  // src/core/events.js
+  var eventHandlers = /* @__PURE__ */ new Map();
+  function on(e, t) {
+    eventHandlers.has(e) || eventHandlers.set(e, /* @__PURE__ */ new Set()), eventHandlers.get(e).add(t);
+  }
+  function off(e, t) {
+    eventHandlers.get(e)?.delete(t);
+  }
+  function emit(e, ...t) {
+    eventHandlers.get(e)?.forEach((n) => {
+      try {
+        n(...t);
+      } catch (r) {
+        console.warn(`[wf-algolia] Event handler error (${e}):`, r);
+      }
+    });
+  }
+
+  // src/utils/sanitize.js
+  function sanitizeUrl(e) {
+    let t = e.trim(), n = t.toLowerCase();
+    return n.startsWith("javascript:") || n.startsWith("data:") || n.startsWith("vbscript:") ? (console.warn("[wf-algolia] Blocked unsafe URL:", t), "#") : t;
+  }
+  var ALLOWED_TAGS = {
+    em: /* @__PURE__ */ new Set(),
+    mark: /* @__PURE__ */ new Set(),
+    strong: /* @__PURE__ */ new Set(),
+    b: /* @__PURE__ */ new Set(),
+    i: /* @__PURE__ */ new Set(),
+    u: /* @__PURE__ */ new Set(),
+    p: /* @__PURE__ */ new Set(),
+    br: /* @__PURE__ */ new Set(),
+    ul: /* @__PURE__ */ new Set(),
+    ol: /* @__PURE__ */ new Set(),
+    li: /* @__PURE__ */ new Set(),
+    h1: /* @__PURE__ */ new Set(),
+    h2: /* @__PURE__ */ new Set(),
+    h3: /* @__PURE__ */ new Set(),
+    h4: /* @__PURE__ */ new Set(),
+    blockquote: /* @__PURE__ */ new Set(),
+    code: /* @__PURE__ */ new Set(),
+    pre: /* @__PURE__ */ new Set(),
+    a: /* @__PURE__ */ new Set(["href", "title", "target", "rel"]),
+    img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height"])
+  };
+  var ELEMENT_NODE = 1;
+  var TEXT_NODE = 3;
+  function sanitizeHtml(e) {
+    let t = new DOMParser().parseFromString(e, "text/html");
+    return sanitizeNode(t.head), sanitizeNode(t.body), t.head.innerHTML + t.body.innerHTML;
+  }
+  function sanitizeNode(e) {
+    let t = Array.from(e.childNodes);
+    for (let n of t)
+      if (n.nodeType === ELEMENT_NODE) {
+        let r = n, i = r.tagName.toLowerCase();
+        if (!(i in ALLOWED_TAGS)) {
+          sanitizeNode(r);
+          let l = r.parentNode;
+          if (l) {
+            for (; r.firstChild; ) l.insertBefore(r.firstChild, r);
+            l.removeChild(r);
+          }
+          continue;
+        }
+        let o = ALLOWED_TAGS[i] ?? /* @__PURE__ */ new Set();
+        for (let l of Array.from(r.attributes))
+          o.has(l.name.toLowerCase()) || r.removeAttribute(l.name);
+        i === "a" && r.hasAttribute("href") && r.setAttribute("href", sanitizeUrl(r.getAttribute("href") ?? "")), i === "img" && r.hasAttribute("src") && r.setAttribute("src", sanitizeUrl(r.getAttribute("src") ?? "")), sanitizeNode(r);
+      } else n.nodeType !== TEXT_NODE && n.parentNode?.removeChild(n);
+  }
+
   // node_modules/search-insights/dist/search-insights-browser.mjs
   var version = "2.17.3";
   function extractAdditionalParams(e) {
@@ -1969,26 +2041,145 @@
   // node_modules/search-insights/index-browser.mjs
   var index_browser_default = entryBrowser;
 
-  // src/app.carved.js
-  var import_algoliasearch = __toESM(require_algoliasearch_umd(), 1);
-  var import_recommend = __toESM(require_recommend_umd(), 1);
+  // src/insights/insights.js
   var insights = index_browser_default;
-  var eventHandlers = /* @__PURE__ */ new Map();
-  function on(e, t) {
-    eventHandlers.has(e) || eventHandlers.set(e, /* @__PURE__ */ new Set()), eventHandlers.get(e).add(t);
+  var insightsReady = false;
+  var indexNameResolver = null;
+  function setIndexNameResolver(e) {
+    indexNameResolver = e;
   }
-  function off(e, t) {
-    eventHandlers.get(e)?.delete(t);
+  function hasEventAttrAncestor(e) {
+    let t = e instanceof Element ? e : e?.parentElement;
+    return t ? !!t.closest("[wf-algolia-event], [wf-algolia-conversion]") : false;
   }
-  function emit(e, ...t) {
-    eventHandlers.get(e)?.forEach((n) => {
-      try {
-        n(...t);
-      } catch (r) {
-        console.warn(`[wf-algolia] Event handler error (${e}):`, r);
-      }
+  function initInsights(e) {
+    insights("init", {
+      appId: e.appId,
+      apiKey: e.searchKey,
+      useCookie: e.insightsCookie
+    }), insightsReady = true, window.aa = insights, document.addEventListener("click", (t) => {
+      let n = t.target.closest(".wf-algolia-injected");
+      if (!n || hasEventAttrAncestor(t.target)) return;
+      let r = n.dataset.wfAlgoliaHitObjectid, i = n.dataset.wfAlgoliaHitIndex, o = n.dataset.wfAlgoliaHitQueryid, l = parseInt(n.dataset.wfAlgoliaHitPosition || "0");
+      !r || !i || trackClick({
+        index: i,
+        objectIDs: [r],
+        queryID: o || void 0,
+        positions: l > 0 ? [l] : void 0
+      });
+    }), document.addEventListener("click", (t) => {
+      let n = t.target;
+      if (n.closest('[wf-algolia-element="hit-preview"]')) return;
+      let r = n.closest('[wf-algolia-element="filter-item"]');
+      if (!r) return;
+      let i = r.closest('[wf-algolia-element="filter-group"]');
+      if (!i) return;
+      let o = i.getAttribute("wf-algolia-field") || i.getAttribute("wf-algolia-facet"), l = r.getAttribute("wf-algolia-value"), s = i.closest("[wf-algolia-index]")?.getAttribute("wf-algolia-index") || indexNameResolver?.() || "";
+      o && l && s && insights("clickedFilters", {
+        index: s,
+        filters: [`${o}:${l}`],
+        eventName: "Filter Clicked"
+      });
+    }), document.addEventListener("click", (t) => {
+      let n = t.target.closest("[wf-algolia-event]");
+      if (!n) return;
+      let r = n.getAttribute("wf-algolia-event"), i = n.getAttribute("wf-algolia-event-name"), o = n.closest(".wf-algolia-injected") || n, l = o.dataset?.wfAlgoliaHitObjectid, s = o.dataset?.wfAlgoliaHitIndex, c = o.dataset?.wfAlgoliaHitQueryid;
+      if (!(!l || !s))
+        switch (r) {
+          case "click":
+            trackClick({
+              index: s,
+              objectIDs: [l],
+              queryID: c || void 0,
+              eventName: i || void 0
+            });
+            break;
+          case "conversion":
+            trackConversion({
+              index: s,
+              objectIDs: [l],
+              queryID: c || void 0,
+              eventName: i || "Converted"
+            });
+            break;
+          case "view":
+            trackView(s, [l]);
+            break;
+        }
+    }), document.addEventListener("click", (t) => {
+      let n = t.target.closest("[wf-algolia-conversion]");
+      if (!n) return;
+      let r = n.getAttribute("wf-algolia-conversion"), i = n.closest(".wf-algolia-injected") || n, o = i.dataset?.wfAlgoliaHitObjectid, l = i.dataset?.wfAlgoliaHitIndex, s = i.dataset?.wfAlgoliaHitQueryid;
+      o && l && trackConversion({
+        index: l,
+        objectIDs: [o],
+        eventName: r,
+        queryID: s || void 0
+      });
     });
   }
+  var VIEW_CHUNK_SIZE = 20;
+  var MAX_EVENT_NAME_LEN = 64;
+  function chunkArray(e, t) {
+    let n = [];
+    for (let r = 0; r < e.length; r += t) n.push(e.slice(r, r + t));
+    return n;
+  }
+  function validObjectIDs(e) {
+    return e.filter((t) => typeof t == "string" && t.length > 0);
+  }
+  function truncateEventName(e) {
+    return e.length > MAX_EVENT_NAME_LEN ? e.slice(0, MAX_EVENT_NAME_LEN) : e;
+  }
+  function trackView(e, t) {
+    if (!insightsReady) return;
+    let n = validObjectIDs(t);
+    if (n.length !== 0)
+      for (let r of chunkArray(n, VIEW_CHUNK_SIZE))
+        insights("viewedObjectIDs", {
+          index: e,
+          objectIDs: r,
+          eventName: "Hits Viewed"
+        });
+  }
+  function trackClick(e) {
+    if (!insightsReady) return;
+    let t = validObjectIDs(e.objectIDs);
+    if (t.length === 0) return;
+    let n = truncateEventName(e.eventName || "Hit Clicked");
+    e.queryID ? insights("clickedObjectIDsAfterSearch", {
+      index: e.index,
+      objectIDs: t,
+      queryID: e.queryID,
+      positions: e.positions || [1],
+      eventName: n
+    }) : insights("clickedObjectIDs", {
+      index: e.index,
+      objectIDs: t,
+      eventName: n
+    });
+  }
+  function trackConversion(e) {
+    if (!insightsReady) return;
+    let t = validObjectIDs(e.objectIDs);
+    if (t.length === 0) return;
+    let n = truncateEventName(e.eventName || "Hit Converted");
+    e.queryID ? insights("convertedObjectIDsAfterSearch", {
+      index: e.index,
+      objectIDs: t,
+      queryID: e.queryID,
+      eventName: n
+    }) : insights("convertedObjectIDs", {
+      index: e.index,
+      objectIDs: t,
+      eventName: n
+    });
+  }
+  function isInsightsReady() {
+    return insightsReady;
+  }
+
+  // src/vendor/finsweet.js
   var WEBFLOW_CSS = {
     formBlock: "w-form",
     checkboxField: "w-checkbox",
@@ -2028,6 +2219,8 @@
       return e?.includes("tabs") && t.require("tabs")?.redraw(), new Promise((n) => t.push(() => n(void 0)));
     }
   };
+
+  // src/utils/dom.js
   function closeDropdownOnPick(e) {
     if (!e.closest("[wf-algolia-close-on-pick]")) return;
     let t = e.closest(".w-dropdown");
@@ -2041,6 +2234,125 @@
     let r = t.querySelector(".w-dropdown-toggle"), i = t.querySelector(".w-dropdown-list");
     t.classList.remove("w--open"), r && (r.classList.remove("w--open"), r.setAttribute("aria-expanded", "false")), i && (i.classList.remove("w--open"), i.setAttribute("aria-hidden", "true")), r && r.click();
   }
+  var warnedDisplayBlock = /* @__PURE__ */ new WeakSet();
+  function showElement(e, t) {
+    if (!e) return;
+    let n = e.getAttribute("wf-algolia-display");
+    if (n) {
+      e.style.display = n;
+      return;
+    }
+    if (t !== void 0) {
+      e.style.display = t;
+      return;
+    }
+    warnedDisplayBlock.has(e) || (warnedDisplayBlock.add(e), console.warn(
+      '[wf-algolia] showing element with display:block. If your Webflow layout uses flex/grid, add wf-algolia-display="flex" (or grid/inline-flex/etc.). See https://wf-algolia-docs.candidleap.com/attribute-reference#wf-algolia-display',
+      e
+    )), e.style.display = "block";
+  }
+  function hideElement(e) {
+    e && (e.style.display = "none");
+  }
+
+  // src/utils/misc.js
+  function escapeFilterValue(e) {
+    return e.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+  function getPath(e, t) {
+    return t.split(".").reduce((n, r) => n?.[r], e);
+  }
+  function slugify(e, t = "-") {
+    return e.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/ /g, t);
+  }
+  function restartIx2() {
+    try {
+      restartWebflow(["ix2"]);
+    } catch (e) {
+      console.warn("[wf-algolia] Could not restart Webflow interactions:", e);
+    }
+  }
+
+  // src/utils/format.js
+  function interpolate(e, t) {
+    return e.replace(/\{(\w+)\}/g, (n, r) => {
+      let i = t[r];
+      return i == null ? "" : String(i);
+    });
+  }
+  var textTemplateCache = /* @__PURE__ */ new WeakMap();
+  function getTextTemplate(e, t) {
+    let n = textTemplateCache.get(e);
+    if (n === void 0) {
+      let r = e.getAttribute("wf-algolia-text-template");
+      if (r !== null) n = r;
+      else {
+        let i = (e.textContent ?? "").trim();
+        n = i.includes("{") && i.includes("}") ? i : t;
+      }
+      textTemplateCache.set(e, n);
+    }
+    return n;
+  }
+  var originalTextCache = /* @__PURE__ */ new WeakMap();
+  function getOriginalText(e) {
+    let t = originalTextCache.get(e);
+    return t === void 0 && (t = (e.textContent ?? "").trim(), originalTextCache.set(e, t)), t;
+  }
+  var COMPARATORS = ["!==", "===", ">=", "<=", ">", "<"];
+  function evalCondition(e, t) {
+    let n = COMPARATORS.find((g) => e.includes(g));
+    if (!n) return !!getPath(t, e.trim());
+    let [r, i] = e.split(n).map((g) => g.trim());
+    if (r === void 0 || i === void 0) return false;
+    let o = getPath(t, r), l = i.replace(/^["']|["']$/g, ""), s = parseFloat(o), c = parseFloat(l), m = !isNaN(s) && !isNaN(c);
+    switch (n) {
+      case "===":
+        return String(o) === l;
+      case "!==":
+        return String(o) !== l;
+      case ">":
+        return m && s > c;
+      case ">=":
+        return m && s >= c;
+      case "<":
+        return m && s < c;
+      case "<=":
+        return m && s <= c;
+      default:
+        return false;
+    }
+  }
+  function formatValue(e, t) {
+    if (e == null || e === "") return "";
+    switch (t) {
+      case "rating": {
+        let n = parseFloat(e);
+        return isNaN(n) ? "" : `\u2605 ${n.toFixed(1)}`;
+      }
+      case "year": {
+        let n = String(e);
+        if (/^\d{4}$/.test(n)) return n;
+        let r = new Date(n);
+        return isNaN(r.getTime()) ? "" : String(r.getFullYear());
+      }
+      case "currency": {
+        let n = parseFloat(e);
+        return isNaN(n) ? "" : `$${n.toFixed(2)}`;
+      }
+      case "number": {
+        let n = parseFloat(e);
+        return isNaN(n) ? "" : n.toLocaleString();
+      }
+      default:
+        return String(e);
+    }
+  }
+  function applySlugifyAttr(e, t) {
+    return e.getAttribute("wf-algolia-slugify") === "true" ? slugify(t) : t;
+  }
+
+  // src/core/filter-state.js
   var FILTER_STATE = {};
   var STAGING_STATE = {};
   function toggleStateValue(e, t, n, r, i, o) {
@@ -2076,6 +2388,21 @@
       ...STAGING_STATE
     };
   }
+  function stateToAlgoliaFilters(e) {
+    let t = [], n = [];
+    return Object.entries(e).forEach(([r, i]) => {
+      if (i.type === "checkbox" || i.type === "boolean") {
+        if (!i.values || i.values.size === 0) return;
+        i.match === "and" ? i.values.forEach((o) => t.push([`${r}:${escapeFilterValue(o)}`])) : t.push([...i.values].map((o) => `${r}:${escapeFilterValue(o)}`));
+      }
+      (i.type === "number" || i.type === "date") && (i.min !== void 0 && n.push(`${r}>=${i.min}`), i.max !== void 0 && n.push(`${r}<=${i.max}`));
+    }), {
+      facetFilters: t,
+      numericFilters: n
+    };
+  }
+
+  // src/filters/hierarchy.js
   var MAX_DEPTH = 5;
   var HIERARCHY_SEPARATOR = " > ";
   function leafValue(e) {
@@ -2206,6 +2533,252 @@
     for (let t of allChildLinks)
       getAncestorSelections(t, e).length === t.depth ? clearParentEmptyBehavior(t.childEl, t.whenParentEmpty) : applyParentEmptyBehavior(t.childEl, t.whenParentEmpty);
   }
+
+  // src/filters/show-more.js
+  var showMoreReapplyFns = /* @__PURE__ */ new WeakMap();
+  function initShowMore() {
+    document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((e) => {
+      let t = parseInt(e.getAttribute("wf-algolia-limit") || "0");
+      if (t <= 0) return;
+      let n = e.getAttribute("wf-algolia-hideclass") || "is-hidden", r = e.querySelector('[wf-algolia-element="filter-show-more"]'), i = e.getAttribute("wf-algolia-text-more"), o = e.getAttribute("wf-algolia-text-less"), l = r?.textContent ?? "", s = i ?? l, c = o ?? "Show less", m = false, g = () => {
+        let u = e.querySelectorAll('[wf-algolia-element="filter-item"]'), h = 0;
+        u.forEach((y) => {
+          let b = y.closest('[role="listitem"]') || y;
+          m || h < t ? (b.classList.remove(n), h += 1) : b.classList.add(n);
+        }), r && (r.textContent = m ? c : s);
+      };
+      r && r.addEventListener("click", () => {
+        m = !m, g();
+      }), showMoreReapplyFns.set(e, g), g();
+    });
+  }
+  function reapplyShowMore(e) {
+    let t = showMoreReapplyFns.get(e);
+    t && t();
+  }
+
+  // src/actions/filter-actions.js
+  function syncFilterDOM(e = FILTER_STATE) {
+    document.querySelectorAll("[data-wf-algolia-staged]").forEach((t) => {
+      t.removeAttribute("data-wf-algolia-staged");
+    }), document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((t) => {
+      let n = t.getAttribute("wf-algolia-field") || t.getAttribute("wf-algolia-facet") || "", r = t.getAttribute("wf-algolia-activeclass") || "is-active";
+      if (synthesizeMissingSelected(t, n, e), t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((l) => {
+        let s = l.getAttribute("wf-algolia-value") || "", m = e[n]?.values?.has(s) ?? false;
+        (l instanceof HTMLInputElement ? [l] : [
+          ...l.querySelectorAll(
+            'input[type="checkbox"], input[type="radio"]'
+          )
+        ]).forEach((y) => {
+          y.checked = m;
+        }), m ? l.setAttribute("data-wf-algolia-active", "true") : l.removeAttribute("data-wf-algolia-active");
+        let u = l instanceof HTMLInputElement ? l.closest("label") : null;
+        m ? (l.classList.add(r), u && u.classList.add(r)) : (l.classList.remove(r), u && u.classList.remove(r)), t.getAttribute("wf-algolia-type") === "radio" ? l.setAttribute("aria-selected", String(m)) : l.setAttribute("aria-pressed", String(m));
+      }), !e[n]) {
+        let l = t.querySelector('[wf-algolia-element="range-min"]'), s = t.querySelector('[wf-algolia-element="range-max"]');
+        l && (l.value = l.min), s && (s.value = s.max);
+        let c = t.querySelector('[wf-algolia-element="range-display"]');
+        c && l && s && (c.textContent = `${l.min} \u2013 ${s.max}`);
+      }
+      t.querySelectorAll(
+        'input[type="checkbox"], input[type="radio"]'
+      ).forEach((l) => {
+        syncWebflowInputVisual(l, l.checked);
+      });
+      let i = null, o = t.querySelector(
+        '[wf-algolia-element="filter-item"] input:checked, input[wf-algolia-element="filter-item"]:checked'
+      );
+      if (o) i = o.closest("label");
+      else {
+        let s = t.closest('[wf-algolia-element="browse"]')?.querySelector(`[wf-algolia-reset="${n}"]`);
+        s instanceof HTMLInputElement && s.type === "radio" && (s.checked = true, syncWebflowInputVisual(s, true), i = s.closest("label"));
+      }
+      applyActiveLabelClasses(t, i), sortFilterItems(t, n, e), reapplyShowMore(t);
+    }), renderSelectedCounts(e), renderSelectedValues(e);
+  }
+  function synthesizeMissingSelected(e, t, n) {
+    if (e.getAttribute("wf-algolia-show-selected-missing") !== "true" || !t)
+      return;
+    let r = n[t]?.values;
+    if (e.querySelectorAll('[data-wf-algolia-synthesized="true"]').forEach((g) => {
+      let u = g.getAttribute("wf-algolia-value") || "";
+      (!r || !r.has(u)) && g.remove();
+    }), !r || r.size === 0)
+      return;
+    let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')], o = new Set(i.map((g) => g.getAttribute("wf-algolia-value") || "")), l = [...r].filter((g) => !o.has(g));
+    if (l.length === 0) return;
+    let s = e.querySelector('[wf-algolia-element="filter-template"]') || i[0] || null;
+    if (!s) return;
+    let c = i[0]?.parentElement ?? s.parentElement ?? e, m = c.firstChild;
+    for (let g of l) {
+      let u = s.cloneNode(true);
+      u.removeAttribute("wf-algolia-element"), u.setAttribute("wf-algolia-element", "filter-item"), u.setAttribute("wf-algolia-value", g), u.setAttribute("data-wf-algolia-synthesized", "true"), u.style.display === "none" && (u.style.display = ""), u.querySelectorAll("*").forEach((b) => {
+        b.style.display === "none" && (b.style.display = "");
+      });
+      let h = u.querySelector('[wf-algolia-element="filter-value-text"]') || u.querySelector(".wf-fi-name");
+      h && (h.textContent = g);
+      let y = u.querySelector('[wf-algolia-element="filter-count"]');
+      y && (y.textContent = ""), u.querySelector("input") || (u.setAttribute("role", "button"), u.setAttribute("tabindex", "0")), c.insertBefore(u, m);
+    }
+  }
+  function sortFilterItems(e, t, n) {
+    let r = e.getAttribute("wf-algolia-sort");
+    if (!r || r === "natural" || r !== "selected-first" && r !== "alpha" && r !== "count")
+      return;
+    let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')];
+    if (i.length < 2) return;
+    let o = i[0].parentElement;
+    if (!o) return;
+    for (let g of i) if (g.parentElement !== o) return;
+    let l = (g) => g.getAttribute("wf-algolia-value") || "", s = (g) => n[t]?.values?.has(l(g)) ?? false, c = (g) => {
+      let u = g.querySelector('[wf-algolia-element="filter-count"]'), h = parseInt((u?.textContent ?? "0").trim(), 10);
+      return Number.isFinite(h) ? h : 0;
+    }, m;
+    if (r === "selected-first") {
+      let g = [], u = [];
+      for (let h of i) (s(h) ? g : u).push(h);
+      m = [...g, ...u];
+    } else
+      r === "alpha" ? m = [...i].sort(
+        (g, u) => l(g).localeCompare(l(u), void 0, {
+          sensitivity: "base"
+        })
+      ) : m = [...i].sort((g, u) => c(u) - c(g));
+    for (let g of m) o.appendChild(g);
+  }
+  var warnedCountNoField = /* @__PURE__ */ new WeakSet();
+  function resolveCountField(e) {
+    let t = e.getAttribute("wf-algolia-field");
+    if (t) return t;
+    let n = e.closest('[wf-algolia-element="filter-group"]');
+    if (n) {
+      let r = n.getAttribute("wf-algolia-field") || n.getAttribute("wf-algolia-facet");
+      if (r) return r;
+    }
+    return null;
+  }
+  var warnedCountNoSlot = /* @__PURE__ */ new WeakSet();
+  function renderSelectedCounts(e = getEffectiveState()) {
+    document.querySelectorAll('[wf-algolia-element="filter-selected-count"]').forEach((t) => {
+      let n = resolveCountField(t);
+      if (!n) {
+        warnedCountNoField.has(t) || (warnedCountNoField.add(t), console.warn(
+          '[wf-algolia] filter-selected-count cannot resolve its field. Place the badge inside a `wf-algolia-element="filter-group"` wrapper (Model A \u2014 inherits its `wf-algolia-field`), or set `wf-algolia-field="<facet>"` on the badge itself (Model B \u2014 explicit cross-scope pointer).',
+          t
+        ));
+        return;
+      }
+      let r = e[n]?.values, i = r?.size ?? 0, o = i > 0 ? [...r].join(", ") : "", l = {
+        count: i,
+        value: o
+      }, s = t.querySelectorAll('[wf-algolia-element="filter-count-text"]');
+      if (s.length > 0)
+        s.forEach((g) => {
+          let u = getTextTemplate(g, "{count}");
+          g.textContent = interpolate(u, l);
+        });
+      else if (t.children.length === 0) {
+        let g = getTextTemplate(t, "{count}");
+        t.textContent = interpolate(g, l);
+      } else
+        warnedCountNoSlot.has(t) || (warnedCountNoSlot.add(t), console.warn(
+          '[wf-algolia] filter-selected-count outer has inner elements but no `wf-algolia-element="filter-count-text"` descendant. Add the role to the inner text element so the count can be rendered without overwriting your Pill DOM.',
+          t
+        ));
+      let c = t.getAttribute("wf-algolia-hide-empty") === "true";
+      c && i === 0 ? t.style.display = "none" : c && t.style.removeProperty("display");
+      let m = t.getAttribute("wf-algolia-zeroclass");
+      if (m) {
+        let g = m.split(/\s+/).filter(Boolean);
+        g.length > 0 && (i === 0 ? t.classList.add(...g) : t.classList.remove(...g));
+      }
+    });
+  }
+  var warnedValueNoField = /* @__PURE__ */ new WeakSet();
+  var warnedValueNoSlot = /* @__PURE__ */ new WeakSet();
+  function resolveValueField(e) {
+    let t = e.getAttribute("wf-algolia-field");
+    if (t) return t;
+    let n = e.closest('[wf-algolia-element="filter-group"]');
+    if (n) {
+      let r = n.getAttribute("wf-algolia-field") || n.getAttribute("wf-algolia-facet");
+      if (r) return r;
+    }
+    return null;
+  }
+  function renderValueSlot(e, t) {
+    let n = getOriginalText(e);
+    if (t.count === 0) {
+      e.textContent = n;
+      return;
+    }
+    let r = getTextTemplate(e, "{value}");
+    e.textContent = interpolate(r, t);
+  }
+  function renderSelectedValues(e = getEffectiveState()) {
+    document.querySelectorAll('[wf-algolia-element="filter-selected-value"]').forEach((t) => {
+      let n = resolveValueField(t);
+      if (!n) {
+        warnedValueNoField.has(t) || (warnedValueNoField.add(t), console.warn(
+          '[wf-algolia] filter-selected-value cannot resolve its field. Place the slot inside a `wf-algolia-element="filter-group"` wrapper (Model A \u2014 inherits its `wf-algolia-field`), or set `wf-algolia-field="<facet>"` on the slot itself (Model B \u2014 explicit cross-scope pointer).',
+          t
+        ));
+        return;
+      }
+      let r = e[n]?.values, i = r?.size ?? 0, l = {
+        value: i > 0 ? [...r].join(", ") : "",
+        count: i
+      }, s = t.querySelectorAll(
+        '[wf-algolia-element="filter-value-text-target"]'
+      );
+      s.length > 0 ? s.forEach((m) => renderValueSlot(m, l)) : t.children.length === 0 ? renderValueSlot(t, l) : warnedValueNoSlot.has(t) || (warnedValueNoSlot.add(t), console.warn(
+        '[wf-algolia] filter-selected-value outer has inner elements but no `wf-algolia-element="filter-value-text-target"` descendant. Add the role to the inner text element so the selected value can be rendered without overwriting your toggle DOM.',
+        t
+      ));
+      let c = t.getAttribute("wf-algolia-hide-empty") === "true";
+      c && i === 0 ? t.style.display = "none" : c && t.style.removeProperty("display");
+    });
+  }
+  function clearAllFilters(e) {
+    clearState(FILTER_STATE), discardStaging(), document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((t) => {
+      let n = t.querySelector('[wf-algolia-element="range-min"]'), r = t.querySelector('[wf-algolia-element="range-max"]');
+      if (!n || !r) return;
+      let i = n.getAttribute("min") ?? n.min ?? "0", o = r.getAttribute("max") ?? r.max ?? "100";
+      n.value !== i && (n.value = i, n.dispatchEvent(
+        new Event("input", {
+          bubbles: true
+        })
+      )), r.value !== o && (r.value = o, r.dispatchEvent(
+        new Event("input", {
+          bubbles: true
+        })
+      ));
+    }), syncFilterDOM(), getAllChildLinks().forEach((t) => {
+      applyParentEmptyBehavior(t.childEl, t.whenParentEmpty), t.childEl.querySelectorAll(".wf-algolia-injected").forEach((n) => n.remove());
+    }), emit("filter", FILTER_STATE), e();
+  }
+  function clearFilter(e, t) {
+    delete FILTER_STATE[e], syncFilterDOM(), emit("filter", FILTER_STATE), t();
+  }
+  function setFilter(e, t, n) {
+    FILTER_STATE[e] = {
+      type: "checkbox",
+      match: "or",
+      values: new Set(t)
+    }, syncFilterDOM(), emit("filter", FILTER_STATE), n();
+  }
+  function commitStagingAndSync(e) {
+    commitStaging(e), renderSelectedValues(), renderSelectedCounts();
+  }
+  function discardStagingAndSync(e) {
+    discardStaging(e), renderSelectedValues(), renderSelectedCounts();
+  }
+  function setQuery(e, t) {
+    let n = document.querySelector('[wf-algolia-element="browse-search"]') || document.querySelector('[wf-algolia-element="search-input"]');
+    n && (n.value = e), emit("search", e), t();
+  }
+
+  // src/filters/filter-group.js
   var activeLabelClassCache = /* @__PURE__ */ new WeakMap();
   var WF_INPUT_VISUAL_SELECTOR = `.${WEBFLOW_CSS.radioInput}, .${WEBFLOW_CSS.checkboxInput}`;
   function syncWebflowInputVisual(e, t) {
@@ -2506,546 +3079,72 @@
       }
     });
   }
-  var showMoreReapplyFns = /* @__PURE__ */ new WeakMap();
-  function initShowMore() {
-    document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((e) => {
-      let t = parseInt(e.getAttribute("wf-algolia-limit") || "0");
-      if (t <= 0) return;
-      let n = e.getAttribute("wf-algolia-hideclass") || "is-hidden", r = e.querySelector('[wf-algolia-element="filter-show-more"]'), i = e.getAttribute("wf-algolia-text-more"), o = e.getAttribute("wf-algolia-text-less"), l = r?.textContent ?? "", s = i ?? l, c = o ?? "Show less", m = false, g = () => {
-        let u = e.querySelectorAll('[wf-algolia-element="filter-item"]'), h = 0;
-        u.forEach((y) => {
-          let b = y.closest('[role="listitem"]') || y;
-          m || h < t ? (b.classList.remove(n), h += 1) : b.classList.add(n);
-        }), r && (r.textContent = m ? c : s);
-      };
-      r && r.addEventListener("click", () => {
-        m = !m, g();
-      }), showMoreReapplyFns.set(e, g), g();
-    });
-  }
-  function reapplyShowMore(e) {
-    let t = showMoreReapplyFns.get(e);
-    t && t();
-  }
-  function interpolate(e, t) {
-    return e.replace(/\{(\w+)\}/g, (n, r) => {
-      let i = t[r];
-      return i == null ? "" : String(i);
-    });
-  }
-  var textTemplateCache = /* @__PURE__ */ new WeakMap();
-  function getTextTemplate(e, t) {
-    let n = textTemplateCache.get(e);
-    if (n === void 0) {
-      let r = e.getAttribute("wf-algolia-text-template");
-      if (r !== null) n = r;
-      else {
-        let i = (e.textContent ?? "").trim();
-        n = i.includes("{") && i.includes("}") ? i : t;
-      }
-      textTemplateCache.set(e, n);
-    }
-    return n;
-  }
-  var originalTextCache = /* @__PURE__ */ new WeakMap();
-  function getOriginalText(e) {
-    let t = originalTextCache.get(e);
-    return t === void 0 && (t = (e.textContent ?? "").trim(), originalTextCache.set(e, t)), t;
-  }
-  function syncFilterDOM(e = FILTER_STATE) {
-    document.querySelectorAll("[data-wf-algolia-staged]").forEach((t) => {
-      t.removeAttribute("data-wf-algolia-staged");
-    }), document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((t) => {
-      let n = t.getAttribute("wf-algolia-field") || t.getAttribute("wf-algolia-facet") || "", r = t.getAttribute("wf-algolia-activeclass") || "is-active";
-      if (synthesizeMissingSelected(t, n, e), t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((l) => {
-        let s = l.getAttribute("wf-algolia-value") || "", m = e[n]?.values?.has(s) ?? false;
-        (l instanceof HTMLInputElement ? [l] : [
-          ...l.querySelectorAll(
-            'input[type="checkbox"], input[type="radio"]'
-          )
-        ]).forEach((y) => {
-          y.checked = m;
-        }), m ? l.setAttribute("data-wf-algolia-active", "true") : l.removeAttribute("data-wf-algolia-active");
-        let u = l instanceof HTMLInputElement ? l.closest("label") : null;
-        m ? (l.classList.add(r), u && u.classList.add(r)) : (l.classList.remove(r), u && u.classList.remove(r)), t.getAttribute("wf-algolia-type") === "radio" ? l.setAttribute("aria-selected", String(m)) : l.setAttribute("aria-pressed", String(m));
-      }), !e[n]) {
-        let l = t.querySelector('[wf-algolia-element="range-min"]'), s = t.querySelector('[wf-algolia-element="range-max"]');
-        l && (l.value = l.min), s && (s.value = s.max);
-        let c = t.querySelector('[wf-algolia-element="range-display"]');
-        c && l && s && (c.textContent = `${l.min} \u2013 ${s.max}`);
-      }
-      t.querySelectorAll(
-        'input[type="checkbox"], input[type="radio"]'
-      ).forEach((l) => {
-        syncWebflowInputVisual(l, l.checked);
+  function syncFacetCounts(e) {
+    document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((t) => {
+      if (!t.closest('[wf-algolia-element="browse"]')) return;
+      let n = getFieldOrFacet(t);
+      if (!n) return;
+      let r = e[n] || {}, i = t.getAttribute("wf-algolia-zeroclass") || "is-disabled";
+      t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((l) => {
+        let s = l.getAttribute("wf-algolia-value");
+        if (!s) return;
+        let c = l.querySelector('[wf-algolia-element="filter-count"]'), m = r[s] ?? 0;
+        c && (c.textContent = String(m));
+        let g = l.hasAttribute("data-wf-algolia-active");
+        m === 0 && !g ? l.classList.add(i) : l.classList.remove(i);
       });
-      let i = null, o = t.querySelector(
-        '[wf-algolia-element="filter-item"] input:checked, input[wf-algolia-element="filter-item"]:checked'
-      );
-      if (o) i = o.closest("label");
-      else {
-        let s = t.closest('[wf-algolia-element="browse"]')?.querySelector(`[wf-algolia-reset="${n}"]`);
-        s instanceof HTMLInputElement && s.type === "radio" && (s.checked = true, syncWebflowInputVisual(s, true), i = s.closest("label"));
-      }
-      applyActiveLabelClasses(t, i), sortFilterItems(t, n, e), reapplyShowMore(t);
-    }), renderSelectedCounts(e), renderSelectedValues(e);
-  }
-  function synthesizeMissingSelected(e, t, n) {
-    if (e.getAttribute("wf-algolia-show-selected-missing") !== "true" || !t)
-      return;
-    let r = n[t]?.values;
-    if (e.querySelectorAll('[data-wf-algolia-synthesized="true"]').forEach((g) => {
-      let u = g.getAttribute("wf-algolia-value") || "";
-      (!r || !r.has(u)) && g.remove();
-    }), !r || r.size === 0)
-      return;
-    let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')], o = new Set(i.map((g) => g.getAttribute("wf-algolia-value") || "")), l = [...r].filter((g) => !o.has(g));
-    if (l.length === 0) return;
-    let s = e.querySelector('[wf-algolia-element="filter-template"]') || i[0] || null;
-    if (!s) return;
-    let c = i[0]?.parentElement ?? s.parentElement ?? e, m = c.firstChild;
-    for (let g of l) {
-      let u = s.cloneNode(true);
-      u.removeAttribute("wf-algolia-element"), u.setAttribute("wf-algolia-element", "filter-item"), u.setAttribute("wf-algolia-value", g), u.setAttribute("data-wf-algolia-synthesized", "true"), u.style.display === "none" && (u.style.display = ""), u.querySelectorAll("*").forEach((b) => {
-        b.style.display === "none" && (b.style.display = "");
-      });
-      let h = u.querySelector('[wf-algolia-element="filter-value-text"]') || u.querySelector(".wf-fi-name");
-      h && (h.textContent = g);
-      let y = u.querySelector('[wf-algolia-element="filter-count"]');
-      y && (y.textContent = ""), u.querySelector("input") || (u.setAttribute("role", "button"), u.setAttribute("tabindex", "0")), c.insertBefore(u, m);
-    }
-  }
-  function sortFilterItems(e, t, n) {
-    let r = e.getAttribute("wf-algolia-sort");
-    if (!r || r === "natural" || r !== "selected-first" && r !== "alpha" && r !== "count")
-      return;
-    let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')];
-    if (i.length < 2) return;
-    let o = i[0].parentElement;
-    if (!o) return;
-    for (let g of i) if (g.parentElement !== o) return;
-    let l = (g) => g.getAttribute("wf-algolia-value") || "", s = (g) => n[t]?.values?.has(l(g)) ?? false, c = (g) => {
-      let u = g.querySelector('[wf-algolia-element="filter-count"]'), h = parseInt((u?.textContent ?? "0").trim(), 10);
-      return Number.isFinite(h) ? h : 0;
-    }, m;
-    if (r === "selected-first") {
-      let g = [], u = [];
-      for (let h of i) (s(h) ? g : u).push(h);
-      m = [...g, ...u];
-    } else
-      r === "alpha" ? m = [...i].sort(
-        (g, u) => l(g).localeCompare(l(u), void 0, {
-          sensitivity: "base"
-        })
-      ) : m = [...i].sort((g, u) => c(u) - c(g));
-    for (let g of m) o.appendChild(g);
-  }
-  var warnedCountNoField = /* @__PURE__ */ new WeakSet();
-  function resolveCountField(e) {
-    let t = e.getAttribute("wf-algolia-field");
-    if (t) return t;
-    let n = e.closest('[wf-algolia-element="filter-group"]');
-    if (n) {
-      let r = n.getAttribute("wf-algolia-field") || n.getAttribute("wf-algolia-facet");
-      if (r) return r;
-    }
-    return null;
-  }
-  var warnedCountNoSlot = /* @__PURE__ */ new WeakSet();
-  function renderSelectedCounts(e = getEffectiveState()) {
-    document.querySelectorAll('[wf-algolia-element="filter-selected-count"]').forEach((t) => {
-      let n = resolveCountField(t);
-      if (!n) {
-        warnedCountNoField.has(t) || (warnedCountNoField.add(t), console.warn(
-          '[wf-algolia] filter-selected-count cannot resolve its field. Place the badge inside a `wf-algolia-element="filter-group"` wrapper (Model A \u2014 inherits its `wf-algolia-field`), or set `wf-algolia-field="<facet>"` on the badge itself (Model B \u2014 explicit cross-scope pointer).',
-          t
-        ));
-        return;
-      }
-      let r = e[n]?.values, i = r?.size ?? 0, o = i > 0 ? [...r].join(", ") : "", l = {
-        count: i,
-        value: o
-      }, s = t.querySelectorAll('[wf-algolia-element="filter-count-text"]');
-      if (s.length > 0)
-        s.forEach((g) => {
-          let u = getTextTemplate(g, "{count}");
-          g.textContent = interpolate(u, l);
+      let o = t.querySelector('[wf-algolia-element="filter-group-count"]');
+      if (o) {
+        let l = Object.keys(r).length, s = getTextTemplate(o, "{count}");
+        o.textContent = interpolate(s, {
+          distinct: l,
+          count: l
         });
-      else if (t.children.length === 0) {
-        let g = getTextTemplate(t, "{count}");
-        t.textContent = interpolate(g, l);
-      } else
-        warnedCountNoSlot.has(t) || (warnedCountNoSlot.add(t), console.warn(
-          '[wf-algolia] filter-selected-count outer has inner elements but no `wf-algolia-element="filter-count-text"` descendant. Add the role to the inner text element so the count can be rendered without overwriting your Pill DOM.',
-          t
-        ));
-      let c = t.getAttribute("wf-algolia-hide-empty") === "true";
-      c && i === 0 ? t.style.display = "none" : c && t.style.removeProperty("display");
-      let m = t.getAttribute("wf-algolia-zeroclass");
-      if (m) {
-        let g = m.split(/\s+/).filter(Boolean);
-        g.length > 0 && (i === 0 ? t.classList.add(...g) : t.classList.remove(...g));
       }
     });
   }
-  var warnedValueNoField = /* @__PURE__ */ new WeakSet();
-  var warnedValueNoSlot = /* @__PURE__ */ new WeakSet();
-  function resolveValueField(e) {
-    let t = e.getAttribute("wf-algolia-field");
-    if (t) return t;
-    let n = e.closest('[wf-algolia-element="filter-group"]');
-    if (n) {
-      let r = n.getAttribute("wf-algolia-field") || n.getAttribute("wf-algolia-facet");
-      if (r) return r;
-    }
-    return null;
-  }
-  function renderValueSlot(e, t) {
-    let n = getOriginalText(e);
-    if (t.count === 0) {
-      e.textContent = n;
-      return;
-    }
-    let r = getTextTemplate(e, "{value}");
-    e.textContent = interpolate(r, t);
-  }
-  function renderSelectedValues(e = getEffectiveState()) {
-    document.querySelectorAll('[wf-algolia-element="filter-selected-value"]').forEach((t) => {
-      let n = resolveValueField(t);
-      if (!n) {
-        warnedValueNoField.has(t) || (warnedValueNoField.add(t), console.warn(
-          '[wf-algolia] filter-selected-value cannot resolve its field. Place the slot inside a `wf-algolia-element="filter-group"` wrapper (Model A \u2014 inherits its `wf-algolia-field`), or set `wf-algolia-field="<facet>"` on the slot itself (Model B \u2014 explicit cross-scope pointer).',
-          t
-        ));
-        return;
-      }
-      let r = e[n]?.values, i = r?.size ?? 0, l = {
-        value: i > 0 ? [...r].join(", ") : "",
-        count: i
-      }, s = t.querySelectorAll(
-        '[wf-algolia-element="filter-value-text-target"]'
-      );
-      s.length > 0 ? s.forEach((m) => renderValueSlot(m, l)) : t.children.length === 0 ? renderValueSlot(t, l) : warnedValueNoSlot.has(t) || (warnedValueNoSlot.add(t), console.warn(
-        '[wf-algolia] filter-selected-value outer has inner elements but no `wf-algolia-element="filter-value-text-target"` descendant. Add the role to the inner text element so the selected value can be rendered without overwriting your toggle DOM.',
-        t
-      ));
-      let c = t.getAttribute("wf-algolia-hide-empty") === "true";
-      c && i === 0 ? t.style.display = "none" : c && t.style.removeProperty("display");
-    });
-  }
-  function clearAllFilters(e) {
-    clearState(FILTER_STATE), discardStaging(), document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((t) => {
-      let n = t.querySelector('[wf-algolia-element="range-min"]'), r = t.querySelector('[wf-algolia-element="range-max"]');
-      if (!n || !r) return;
-      let i = n.getAttribute("min") ?? n.min ?? "0", o = r.getAttribute("max") ?? r.max ?? "100";
-      n.value !== i && (n.value = i, n.dispatchEvent(
-        new Event("input", {
-          bubbles: true
-        })
-      )), r.value !== o && (r.value = o, r.dispatchEvent(
-        new Event("input", {
-          bubbles: true
-        })
-      ));
-    }), syncFilterDOM(), getAllChildLinks().forEach((t) => {
-      applyParentEmptyBehavior(t.childEl, t.whenParentEmpty), t.childEl.querySelectorAll(".wf-algolia-injected").forEach((n) => n.remove());
-    }), emit("filter", FILTER_STATE), e();
-  }
-  function clearFilter(e, t) {
-    delete FILTER_STATE[e], syncFilterDOM(), emit("filter", FILTER_STATE), t();
-  }
-  function setFilter(e, t, n) {
-    FILTER_STATE[e] = {
-      type: "checkbox",
-      match: "or",
-      values: new Set(t)
-    }, syncFilterDOM(), emit("filter", FILTER_STATE), n();
-  }
-  function commitStagingAndSync(e) {
-    commitStaging(e), renderSelectedValues(), renderSelectedCounts();
-  }
-  function discardStagingAndSync(e) {
-    discardStaging(e), renderSelectedValues(), renderSelectedCounts();
-  }
-  function setQuery(e, t) {
-    let n = document.querySelector('[wf-algolia-element="browse-search"]') || document.querySelector('[wf-algolia-element="search-input"]');
-    n && (n.value = e), emit("search", e), t();
-  }
-  var insightsReady = false;
-  var indexNameResolver = null;
-  function setIndexNameResolver(e) {
-    indexNameResolver = e;
-  }
-  function hasEventAttrAncestor(e) {
-    let t = e instanceof Element ? e : e?.parentElement;
-    return t ? !!t.closest("[wf-algolia-event], [wf-algolia-conversion]") : false;
-  }
-  function initInsights(e) {
-    insights("init", {
-      appId: e.appId,
-      apiKey: e.searchKey,
-      useCookie: e.insightsCookie
-    }), insightsReady = true, window.aa = insights, document.addEventListener("click", (t) => {
-      let n = t.target.closest(".wf-algolia-injected");
-      if (!n || hasEventAttrAncestor(t.target)) return;
-      let r = n.dataset.wfAlgoliaHitObjectid, i = n.dataset.wfAlgoliaHitIndex, o = n.dataset.wfAlgoliaHitQueryid, l = parseInt(n.dataset.wfAlgoliaHitPosition || "0");
-      !r || !i || trackClick({
-        index: i,
-        objectIDs: [r],
-        queryID: o || void 0,
-        positions: l > 0 ? [l] : void 0
-      });
-    }), document.addEventListener("click", (t) => {
-      let n = t.target;
-      if (n.closest('[wf-algolia-element="hit-preview"]')) return;
-      let r = n.closest('[wf-algolia-element="filter-item"]');
+  function initSelectFilters(e) {
+    document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((t) => {
+      let n = t.getAttribute("wf-algolia-type");
+      if (n !== "select" && n !== "select-multiple") return;
+      let r = t.getAttribute("wf-algolia-field");
       if (!r) return;
-      let i = r.closest('[wf-algolia-element="filter-group"]');
+      let i = t.querySelector("select");
       if (!i) return;
-      let o = i.getAttribute("wf-algolia-field") || i.getAttribute("wf-algolia-facet"), l = r.getAttribute("wf-algolia-value"), s = i.closest("[wf-algolia-index]")?.getAttribute("wf-algolia-index") || indexNameResolver?.() || "";
-      o && l && s && insights("clickedFilters", {
-        index: s,
-        filters: [`${o}:${l}`],
-        eventName: "Filter Clicked"
-      });
-    }), document.addEventListener("click", (t) => {
-      let n = t.target.closest("[wf-algolia-event]");
-      if (!n) return;
-      let r = n.getAttribute("wf-algolia-event"), i = n.getAttribute("wf-algolia-event-name"), o = n.closest(".wf-algolia-injected") || n, l = o.dataset?.wfAlgoliaHitObjectid, s = o.dataset?.wfAlgoliaHitIndex, c = o.dataset?.wfAlgoliaHitQueryid;
-      if (!(!l || !s))
-        switch (r) {
-          case "click":
-            trackClick({
-              index: s,
-              objectIDs: [l],
-              queryID: c || void 0,
-              eventName: i || void 0
-            });
-            break;
-          case "conversion":
-            trackConversion({
-              index: s,
-              objectIDs: [l],
-              queryID: c || void 0,
-              eventName: i || "Converted"
-            });
-            break;
-          case "view":
-            trackView(s, [l]);
-            break;
+      let o = t.getAttribute("wf-algolia-apply-mode"), l = o === "deferred";
+      o !== null && o !== "deferred" && o !== "immediate" && console.warn(
+        `[wf-algolia] Unknown wf-algolia-apply-mode='${o}' on filter-group; falling back to immediate. Valid values: 'immediate' (default) | 'deferred'.`
+      ), i.addEventListener("change", () => {
+        let s;
+        if (i.multiple) {
+          let c = [...i.selectedOptions].map((m) => m.value).filter(Boolean);
+          s = c.length === 0 ? null : {
+            type: "checkbox",
+            match: "or",
+            values: new Set(c)
+          };
+        } else {
+          let { value: c } = i;
+          s = c ? {
+            type: "checkbox",
+            match: "or",
+            values: /* @__PURE__ */ new Set([c])
+          } : null;
         }
-    }), document.addEventListener("click", (t) => {
-      let n = t.target.closest("[wf-algolia-conversion]");
-      if (!n) return;
-      let r = n.getAttribute("wf-algolia-conversion"), i = n.closest(".wf-algolia-injected") || n, o = i.dataset?.wfAlgoliaHitObjectid, l = i.dataset?.wfAlgoliaHitIndex, s = i.dataset?.wfAlgoliaHitQueryid;
-      o && l && trackConversion({
-        index: l,
-        objectIDs: [o],
-        eventName: r,
-        queryID: s || void 0
+        if (l) {
+          s === null ? delete STAGING_STATE[r] : stageFilter(r, s), i.setAttribute("data-wf-algolia-staged", "true"), renderSelectedValues(), renderSelectedCounts();
+          let c = t.getAttribute("wf-algolia-group-id");
+          c && isParentGroup(c) && emit("filter:parent-stage-change", {
+            field: r
+          }), closeDropdownOnPick(i);
+          return;
+        }
+        s === null ? delete FILTER_STATE[r] : FILTER_STATE[r] = s, closeDropdownOnPick(i), e();
       });
     });
   }
-  var VIEW_CHUNK_SIZE = 20;
-  var MAX_EVENT_NAME_LEN = 64;
-  function chunkArray(e, t) {
-    let n = [];
-    for (let r = 0; r < e.length; r += t) n.push(e.slice(r, r + t));
-    return n;
-  }
-  function validObjectIDs(e) {
-    return e.filter((t) => typeof t == "string" && t.length > 0);
-  }
-  function truncateEventName(e) {
-    return e.length > MAX_EVENT_NAME_LEN ? e.slice(0, MAX_EVENT_NAME_LEN) : e;
-  }
-  function trackView(e, t) {
-    if (!insightsReady) return;
-    let n = validObjectIDs(t);
-    if (n.length !== 0)
-      for (let r of chunkArray(n, VIEW_CHUNK_SIZE))
-        insights("viewedObjectIDs", {
-          index: e,
-          objectIDs: r,
-          eventName: "Hits Viewed"
-        });
-  }
-  function trackClick(e) {
-    if (!insightsReady) return;
-    let t = validObjectIDs(e.objectIDs);
-    if (t.length === 0) return;
-    let n = truncateEventName(e.eventName || "Hit Clicked");
-    e.queryID ? insights("clickedObjectIDsAfterSearch", {
-      index: e.index,
-      objectIDs: t,
-      queryID: e.queryID,
-      positions: e.positions || [1],
-      eventName: n
-    }) : insights("clickedObjectIDs", {
-      index: e.index,
-      objectIDs: t,
-      eventName: n
-    });
-  }
-  function trackConversion(e) {
-    if (!insightsReady) return;
-    let t = validObjectIDs(e.objectIDs);
-    if (t.length === 0) return;
-    let n = truncateEventName(e.eventName || "Hit Converted");
-    e.queryID ? insights("convertedObjectIDsAfterSearch", {
-      index: e.index,
-      objectIDs: t,
-      queryID: e.queryID,
-      eventName: n
-    }) : insights("convertedObjectIDs", {
-      index: e.index,
-      objectIDs: t,
-      eventName: n
-    });
-  }
-  function isInsightsReady() {
-    return insightsReady;
-  }
-  var warnedDisplayBlock = /* @__PURE__ */ new WeakSet();
-  function showElement(e, t) {
-    if (!e) return;
-    let n = e.getAttribute("wf-algolia-display");
-    if (n) {
-      e.style.display = n;
-      return;
-    }
-    if (t !== void 0) {
-      e.style.display = t;
-      return;
-    }
-    warnedDisplayBlock.has(e) || (warnedDisplayBlock.add(e), console.warn(
-      '[wf-algolia] showing element with display:block. If your Webflow layout uses flex/grid, add wf-algolia-display="flex" (or grid/inline-flex/etc.). See https://wf-algolia-docs.candidleap.com/attribute-reference#wf-algolia-display',
-      e
-    )), e.style.display = "block";
-  }
-  function hideElement(e) {
-    e && (e.style.display = "none");
-  }
-  function sanitizeUrl(e) {
-    let t = e.trim(), n = t.toLowerCase();
-    return n.startsWith("javascript:") || n.startsWith("data:") || n.startsWith("vbscript:") ? (console.warn("[wf-algolia] Blocked unsafe URL:", t), "#") : t;
-  }
-  var ALLOWED_TAGS = {
-    em: /* @__PURE__ */ new Set(),
-    mark: /* @__PURE__ */ new Set(),
-    strong: /* @__PURE__ */ new Set(),
-    b: /* @__PURE__ */ new Set(),
-    i: /* @__PURE__ */ new Set(),
-    u: /* @__PURE__ */ new Set(),
-    p: /* @__PURE__ */ new Set(),
-    br: /* @__PURE__ */ new Set(),
-    ul: /* @__PURE__ */ new Set(),
-    ol: /* @__PURE__ */ new Set(),
-    li: /* @__PURE__ */ new Set(),
-    h1: /* @__PURE__ */ new Set(),
-    h2: /* @__PURE__ */ new Set(),
-    h3: /* @__PURE__ */ new Set(),
-    h4: /* @__PURE__ */ new Set(),
-    blockquote: /* @__PURE__ */ new Set(),
-    code: /* @__PURE__ */ new Set(),
-    pre: /* @__PURE__ */ new Set(),
-    a: /* @__PURE__ */ new Set(["href", "title", "target", "rel"]),
-    img: /* @__PURE__ */ new Set(["src", "alt", "title", "width", "height"])
-  };
-  var ELEMENT_NODE = 1;
-  var TEXT_NODE = 3;
-  function sanitizeHtml(e) {
-    let t = new DOMParser().parseFromString(e, "text/html");
-    return sanitizeNode(t.head), sanitizeNode(t.body), t.head.innerHTML + t.body.innerHTML;
-  }
-  function sanitizeNode(e) {
-    let t = Array.from(e.childNodes);
-    for (let n of t)
-      if (n.nodeType === ELEMENT_NODE) {
-        let r = n, i = r.tagName.toLowerCase();
-        if (!(i in ALLOWED_TAGS)) {
-          sanitizeNode(r);
-          let l = r.parentNode;
-          if (l) {
-            for (; r.firstChild; ) l.insertBefore(r.firstChild, r);
-            l.removeChild(r);
-          }
-          continue;
-        }
-        let o = ALLOWED_TAGS[i] ?? /* @__PURE__ */ new Set();
-        for (let l of Array.from(r.attributes))
-          o.has(l.name.toLowerCase()) || r.removeAttribute(l.name);
-        i === "a" && r.hasAttribute("href") && r.setAttribute("href", sanitizeUrl(r.getAttribute("href") ?? "")), i === "img" && r.hasAttribute("src") && r.setAttribute("src", sanitizeUrl(r.getAttribute("src") ?? "")), sanitizeNode(r);
-      } else n.nodeType !== TEXT_NODE && n.parentNode?.removeChild(n);
-  }
-  function escapeFilterValue(e) {
-    return e.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-  }
-  function getPath(e, t) {
-    return t.split(".").reduce((n, r) => n?.[r], e);
-  }
-  function slugify(e, t = "-") {
-    return e.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/ /g, t);
-  }
-  function restartIx2() {
-    try {
-      restartWebflow(["ix2"]);
-    } catch (e) {
-      console.warn("[wf-algolia] Could not restart Webflow interactions:", e);
-    }
-  }
-  var COMPARATORS = ["!==", "===", ">=", "<=", ">", "<"];
-  function evalCondition(e, t) {
-    let n = COMPARATORS.find((g) => e.includes(g));
-    if (!n) return !!getPath(t, e.trim());
-    let [r, i] = e.split(n).map((g) => g.trim());
-    if (r === void 0 || i === void 0) return false;
-    let o = getPath(t, r), l = i.replace(/^["']|["']$/g, ""), s = parseFloat(o), c = parseFloat(l), m = !isNaN(s) && !isNaN(c);
-    switch (n) {
-      case "===":
-        return String(o) === l;
-      case "!==":
-        return String(o) !== l;
-      case ">":
-        return m && s > c;
-      case ">=":
-        return m && s >= c;
-      case "<":
-        return m && s < c;
-      case "<=":
-        return m && s <= c;
-      default:
-        return false;
-    }
-  }
-  function formatValue(e, t) {
-    if (e == null || e === "") return "";
-    switch (t) {
-      case "rating": {
-        let n = parseFloat(e);
-        return isNaN(n) ? "" : `\u2605 ${n.toFixed(1)}`;
-      }
-      case "year": {
-        let n = String(e);
-        if (/^\d{4}$/.test(n)) return n;
-        let r = new Date(n);
-        return isNaN(r.getTime()) ? "" : String(r.getFullYear());
-      }
-      case "currency": {
-        let n = parseFloat(e);
-        return isNaN(n) ? "" : `$${n.toFixed(2)}`;
-      }
-      case "number": {
-        let n = parseFloat(e);
-        return isNaN(n) ? "" : n.toLocaleString();
-      }
-      default:
-        return String(e);
-    }
-  }
-  function applySlugifyAttr(e, t) {
-    return e.getAttribute("wf-algolia-slugify") === "true" ? slugify(t) : t;
-  }
+
+  // src/render/populate.js
   var warnedEmptyAlt = /* @__PURE__ */ new WeakSet();
   function populateCard(e, t, n) {
     let r = n?.highlightTag || "mark", i = `<${r}>`, o = `</${r}>`;
@@ -3140,6 +3239,8 @@
       evalCondition(s, t) ? showElement(l) : hideElement(l);
     });
   }
+
+  // src/render/template.js
   function cloneAndPopulate(e, t, n) {
     let r = e.cloneNode(true);
     r.style.display = "", r.removeAttribute("wf-algolia-element"), r.classList.add("wf-algolia-injected");
@@ -3190,6 +3291,8 @@
       s && c.length && trackView(s, c);
     }
   }
+
+  // src/api/public-api.js
   var middlewares = [];
   function registerMiddleware(e) {
     middlewares.push(e);
@@ -3259,6 +3362,8 @@
       }
     };
   }
+
+  // src/core/attributes.js
   function scanAttributes() {
     let e = /* @__PURE__ */ new Map();
     return document.querySelectorAll("[wf-algolia-element]").forEach((n) => {
@@ -3313,6 +3418,47 @@
   function cssEscape(e) {
     return typeof CSS < "u" && typeof CSS.escape == "function" ? CSS.escape(e) : e.replace(/[^a-zA-Z0-9_-]/g, "\\$&");
   }
+
+  // src/utils/debounce.js
+  function debounce(e, t) {
+    let n;
+    return (...r) => {
+      clearTimeout(n), n = setTimeout(() => e(...r), t);
+    };
+  }
+
+  // src/utils/snippet.js
+  function buildSnippetParam(e, t) {
+    return t === "*" ? [`*:${e}`] : t.split(",").map((n) => `${n.trim()}:${e}`);
+  }
+
+  // src/utils/base-filter.js
+  function parseFieldColonValue(e) {
+    if (e === null) return null;
+    let t = e.trim(), n = t.indexOf(":");
+    if (n <= 0 || n >= t.length - 1) return null;
+    let r = t.slice(0, n).trim(), i = t.slice(n + 1).trim();
+    return !r || !i ? null : [[`${r}:${i}`]];
+  }
+  function pairToFacetFilter(e, t) {
+    let n = e?.trim() ?? "", r = t?.trim() ?? "";
+    return !n || !r ? null : [[`${n}:${r}`]];
+  }
+  function readBaseFilter(e, t, n) {
+    let r = e.getAttribute(`${t}-value`);
+    if (r !== null && r.trim() !== "") {
+      let o = pairToFacetFilter(e.getAttribute(`${t}-field`), r);
+      return o === null && n?.(`${t}-value is set but ${t}-field is missing/empty; ignoring.`), o;
+    }
+    let i = e.getAttribute(t);
+    if (i !== null) {
+      let o = parseFieldColonValue(i);
+      return o === null && n?.(`${t}="${i}" is malformed (expected "field:value"); ignoring.`), o;
+    }
+    return null;
+  }
+
+  // src/filters/dynamic-filters.js
   async function fetchFacetValues(e, t, n, r) {
     let o = (await e.initIndex(t).search("", {
       facets: [n],
@@ -3427,73 +3573,8 @@
       i || o ? t.style.display = "" : t.style.display = "none";
     });
   }
-  function parseFieldColonValue(e) {
-    if (e === null) return null;
-    let t = e.trim(), n = t.indexOf(":");
-    if (n <= 0 || n >= t.length - 1) return null;
-    let r = t.slice(0, n).trim(), i = t.slice(n + 1).trim();
-    return !r || !i ? null : [[`${r}:${i}`]];
-  }
-  function pairToFacetFilter(e, t) {
-    let n = e?.trim() ?? "", r = t?.trim() ?? "";
-    return !n || !r ? null : [[`${n}:${r}`]];
-  }
-  function readBaseFilter(e, t, n) {
-    let r = e.getAttribute(`${t}-value`);
-    if (r !== null && r.trim() !== "") {
-      let o = pairToFacetFilter(e.getAttribute(`${t}-field`), r);
-      return o === null && n?.(`${t}-value is set but ${t}-field is missing/empty; ignoring.`), o;
-    }
-    let i = e.getAttribute(t);
-    if (i !== null) {
-      let o = parseFieldColonValue(i);
-      return o === null && n?.(`${t}="${i}" is malformed (expected "field:value"); ignoring.`), o;
-    }
-    return null;
-  }
-  function syncFacetCounts(e) {
-    document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((t) => {
-      if (!t.closest('[wf-algolia-element="browse"]')) return;
-      let n = getFieldOrFacet(t);
-      if (!n) return;
-      let r = e[n] || {}, i = t.getAttribute("wf-algolia-zeroclass") || "is-disabled";
-      t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((l) => {
-        let s = l.getAttribute("wf-algolia-value");
-        if (!s) return;
-        let c = l.querySelector('[wf-algolia-element="filter-count"]'), m = r[s] ?? 0;
-        c && (c.textContent = String(m));
-        let g = l.hasAttribute("data-wf-algolia-active");
-        m === 0 && !g ? l.classList.add(i) : l.classList.remove(i);
-      });
-      let o = t.querySelector('[wf-algolia-element="filter-group-count"]');
-      if (o) {
-        let l = Object.keys(r).length, s = getTextTemplate(o, "{count}");
-        o.textContent = interpolate(s, {
-          distinct: l,
-          count: l
-        });
-      }
-    });
-  }
-  function stateToAlgoliaFilters(e) {
-    let t = [], n = [];
-    return Object.entries(e).forEach(([r, i]) => {
-      if (i.type === "checkbox" || i.type === "boolean") {
-        if (!i.values || i.values.size === 0) return;
-        i.match === "and" ? i.values.forEach((o) => t.push([`${r}:${escapeFilterValue(o)}`])) : t.push([...i.values].map((o) => `${r}:${escapeFilterValue(o)}`));
-      }
-      (i.type === "number" || i.type === "date") && (i.min !== void 0 && n.push(`${r}>=${i.min}`), i.max !== void 0 && n.push(`${r}<=${i.max}`));
-    }), {
-      facetFilters: t,
-      numericFilters: n
-    };
-  }
-  function debounce(e, t) {
-    let n;
-    return (...r) => {
-      clearTimeout(n), n = setTimeout(() => e(...r), t);
-    };
-  }
+
+  // src/filters/filter-search.js
   var SFFV_DEFAULT_DEBOUNCE = 200;
   var warnedNotSearchable = /* @__PURE__ */ new WeakSet();
   var LOCAL_HIDDEN_ATTR = "data-wf-algolia-local-hidden";
@@ -3692,6 +3773,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
     let y = o[0]?.parentElement ?? e;
     return y.insertBefore(m, y.firstChild), reapplyShowMore(e), m;
   }
+
+  // src/filters/filter-tags.js
   var warnedNoChipTemplate = /* @__PURE__ */ new WeakSet();
   function renderFilterTags(e, t, n) {
     let r = document.querySelector('[wf-algolia-element="filter-tag-wrapper"]');
@@ -3785,6 +3868,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
     let t = e.cloneNode(true);
     return t.style.display = "", t.removeAttribute("wf-algolia-element"), t.classList.add("wf-algolia-injected"), t;
   }
+
+  // src/filters/range.js
   var rangeDefaults = {};
   function readRangeBounds(e, t, n) {
     let r = e.getAttribute("fs-rangeslider-min"), i = e.getAttribute("fs-rangeslider-max"), o = r ?? t.getAttribute("min"), l = i ?? n.getAttribute("max");
@@ -3838,6 +3923,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       i.addEventListener("input", b), o.addEventListener("input", b), l && (l.textContent = `${i.value} \u2013 ${o.value}`);
     });
   }
+
+  // src/pagination/infinite-scroll.js
   function initInfiniteScroll(e, t) {
     let n = document.createElement("div");
     n.className = "wf-algolia-sentinel", n.style.height = "1px", e.parentElement?.appendChild(n);
@@ -3859,6 +3946,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       }
     ).observe(n);
   }
+
+  // src/browse/sort.js
   var currentSortIndex = "";
   var sortInitialized = false;
   var primarySortIndex = "";
@@ -3962,9 +4051,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
     if (!sortInitialized) return;
     primarySortIndex = e, currentSortIndex = readSortFromURL() || e, syncSortUI();
   }
-  function buildSnippetParam(e, t) {
-    return t === "*" ? [`*:${e}`] : t.split(",").map((n) => `${n.trim()}:${e}`);
-  }
+
+  // src/browse/url-sync.js
   var HASH_PREFIX = "#wfa=";
   function enc(e) {
     return encodeURIComponent(e);
@@ -4095,6 +4183,81 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       filters: o
     };
   }
+
+  // src/pagination/numbered.js
+  var DEFAULT_PAGE_WINDOW = 5;
+  function getPageWindow(e) {
+    if (!e) return DEFAULT_PAGE_WINDOW;
+    let t = e.getAttribute("wf-algolia-page-window");
+    if (t === null || t === "") return DEFAULT_PAGE_WINDOW;
+    let n = parseInt(t, 10);
+    return Number.isNaN(n) ? DEFAULT_PAGE_WINDOW : Math.max(1, n);
+  }
+  function renderResultsCount(e, t) {
+    let n = getTextTemplate(e, "Showing {shown} of {total}");
+    e.textContent = interpolate(n, {
+      shown: t.shown,
+      total: t.total,
+      count: t.total,
+      page: t.page,
+      pages: t.pages
+    });
+  }
+  function renderPageInfo(e, t) {
+    let n = getTextTemplate(e, "Page {page} of {pages}");
+    e.textContent = interpolate(n, t);
+  }
+  function clonePageNumber(e, t, n) {
+    let r = e.cloneNode(true);
+    return r.style.display = "", r.classList.add("wf-algolia-page-num"), r.removeAttribute("wf-algolia-element"), r.textContent = String(t + 1), n && r.setAttribute("data-wf-algolia-active", "true"), r;
+  }
+  function syncResultsCount(e, t) {
+    document.querySelectorAll('[wf-algolia-element="results-count"]').forEach((n) => {
+      let r = Math.min(e, (browseState.page + 1) * browseState.hitsPerPage);
+      renderResultsCount(n, {
+        shown: r,
+        total: e,
+        page: browseState.page + 1,
+        pages: t
+      });
+    });
+  }
+  function renderPaginationControls(e) {
+    let t = document.querySelector('[wf-algolia-element="page-prev"]'), n = document.querySelector('[wf-algolia-element="page-next"]');
+    t && (t.style.display = browseState.page > 0 ? "" : "none"), n && (n.style.display = browseState.page < e - 1 ? "" : "none"), document.querySelectorAll('[wf-algolia-element="page-info"]').forEach((i) => {
+      renderPageInfo(i, {
+        page: browseState.page + 1,
+        pages: e
+      });
+    });
+    let r = document.querySelector('[wf-algolia-element="page-number"]');
+    if (r) {
+      let i = r.parentElement;
+      if (i) {
+        i.querySelectorAll(".wf-algolia-page-num").forEach((m) => m.remove()), r.style.display = "none";
+        let o = document.querySelector('[wf-algolia-element="browse"]'), l = getPageWindow(o), s = Math.max(0, browseState.page - Math.floor(l / 2)), c = Math.min(e, s + l);
+        s = Math.max(0, c - l);
+        for (let m = s; m < c; m++) {
+          let g = clonePageNumber(r, m, m === browseState.page);
+          g.addEventListener("click", () => {
+            browseState.page = m, runBrowseQuery();
+          }), n ? i.insertBefore(g, n) : i.appendChild(g);
+        }
+      }
+    }
+    urlSyncEnabled && writeStateToURL({
+      query: browseState.query,
+      mode: browseState.mode,
+      page: browseState.page,
+      filters: FILTER_STATE,
+      pagination: paginationMode
+    }), browseState.topOffset && browseState.page > 0 && window.scrollTo({
+      top: browseState.topOffset,
+      behavior: "smooth"
+    });
+  }
+
+  // src/browse/browse.js
   function initModeButtons(e, t, n, r, i) {
     let o = document.querySelectorAll('[wf-algolia-element="mode-btn"]');
     function l() {
@@ -4380,77 +4543,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
   function snippetParam(e, t) {
     return buildSnippetParam(e, t);
   }
-  var DEFAULT_PAGE_WINDOW = 5;
-  function getPageWindow(e) {
-    if (!e) return DEFAULT_PAGE_WINDOW;
-    let t = e.getAttribute("wf-algolia-page-window");
-    if (t === null || t === "") return DEFAULT_PAGE_WINDOW;
-    let n = parseInt(t, 10);
-    return Number.isNaN(n) ? DEFAULT_PAGE_WINDOW : Math.max(1, n);
-  }
-  function renderResultsCount(e, t) {
-    let n = getTextTemplate(e, "Showing {shown} of {total}");
-    e.textContent = interpolate(n, {
-      shown: t.shown,
-      total: t.total,
-      count: t.total,
-      page: t.page,
-      pages: t.pages
-    });
-  }
-  function renderPageInfo(e, t) {
-    let n = getTextTemplate(e, "Page {page} of {pages}");
-    e.textContent = interpolate(n, t);
-  }
-  function clonePageNumber(e, t, n) {
-    let r = e.cloneNode(true);
-    return r.style.display = "", r.classList.add("wf-algolia-page-num"), r.removeAttribute("wf-algolia-element"), r.textContent = String(t + 1), n && r.setAttribute("data-wf-algolia-active", "true"), r;
-  }
-  function syncResultsCount(e, t) {
-    document.querySelectorAll('[wf-algolia-element="results-count"]').forEach((n) => {
-      let r = Math.min(e, (browseState.page + 1) * browseState.hitsPerPage);
-      renderResultsCount(n, {
-        shown: r,
-        total: e,
-        page: browseState.page + 1,
-        pages: t
-      });
-    });
-  }
-  function renderPaginationControls(e) {
-    let t = document.querySelector('[wf-algolia-element="page-prev"]'), n = document.querySelector('[wf-algolia-element="page-next"]');
-    t && (t.style.display = browseState.page > 0 ? "" : "none"), n && (n.style.display = browseState.page < e - 1 ? "" : "none"), document.querySelectorAll('[wf-algolia-element="page-info"]').forEach((i) => {
-      renderPageInfo(i, {
-        page: browseState.page + 1,
-        pages: e
-      });
-    });
-    let r = document.querySelector('[wf-algolia-element="page-number"]');
-    if (r) {
-      let i = r.parentElement;
-      if (i) {
-        i.querySelectorAll(".wf-algolia-page-num").forEach((m) => m.remove()), r.style.display = "none";
-        let o = document.querySelector('[wf-algolia-element="browse"]'), l = getPageWindow(o), s = Math.max(0, browseState.page - Math.floor(l / 2)), c = Math.min(e, s + l);
-        s = Math.max(0, c - l);
-        for (let m = s; m < c; m++) {
-          let g = clonePageNumber(r, m, m === browseState.page);
-          g.addEventListener("click", () => {
-            browseState.page = m, runBrowseQuery();
-          }), n ? i.insertBefore(g, n) : i.appendChild(g);
-        }
-      }
-    }
-    urlSyncEnabled && writeStateToURL({
-      query: browseState.query,
-      mode: browseState.mode,
-      page: browseState.page,
-      filters: FILTER_STATE,
-      pagination: paginationMode
-    }), browseState.topOffset && browseState.page > 0 && window.scrollTo({
-      top: browseState.topOffset,
-      behavior: "smooth"
-    });
-  }
+
+  // src/core/accessibility.js
   function initAccessibility(e) {
     (e.get("search-input") || []).forEach((t) => {
       t.setAttribute("role", "searchbox"), t.getAttribute("aria-label") || t.setAttribute("aria-label", "Search");
@@ -4472,6 +4566,9 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       t.querySelector("input") || (t.setAttribute("role", "button"), t.setAttribute("tabindex", "0"));
     });
   }
+
+  // src/core/config.js
+  var import_algoliasearch = __toESM(require_algoliasearch_umd(), 1);
   var clientSingleton = null;
   function initClient(e) {
     return clientSingleton || (clientSingleton = (0, import_algoliasearch.default)(e.appId, e.searchKey)), clientSingleton;
@@ -4513,6 +4610,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       hideClass: e.getAttribute("data-hideclass") || "is-hidden"
     };
   }
+
+  // src/debug/rules.js
   var TEMPLATE_ROLES = [
     "filter-template",
     "template",
@@ -4939,6 +5038,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
     ruleFieldPointerUndefined,
     ruleDuplicateFieldPointer
   ];
+
+  // src/debug/audit.js
   function runAudit(e, t = ALL_RULES) {
     let n = [];
     for (let r of t) n.push(...r(e));
@@ -5035,6 +5136,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       attributeFilter: OBSERVED_ATTRS
     }), debugObserver = i, i;
   }
+
+  // src/elements/facet-stat.js
   var STAT_KEYS = ["min", "max", "avg", "sum"];
   var warnedStatNoField = /* @__PURE__ */ new WeakSet();
   var warnedStatBadStat = /* @__PURE__ */ new WeakSet();
@@ -5102,6 +5205,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       console.error("[wf-algolia] facet-stat query failed:", c);
     });
   }
+
+  // src/elements/hit-preview.js
   var warnedPreviewNoField = /* @__PURE__ */ new WeakSet();
   var warnedPreviewNoValue = /* @__PURE__ */ new WeakSet();
   var warnedPreviewNoTemplate = /* @__PURE__ */ new WeakSet();
@@ -5410,46 +5515,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       c.appendChild(m), i.template.style.display = "none", renderedPairKeys.set(i.el, i.pairKey);
     });
   }
-  function initSelectFilters(e) {
-    document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((t) => {
-      let n = t.getAttribute("wf-algolia-type");
-      if (n !== "select" && n !== "select-multiple") return;
-      let r = t.getAttribute("wf-algolia-field");
-      if (!r) return;
-      let i = t.querySelector("select");
-      if (!i) return;
-      let o = t.getAttribute("wf-algolia-apply-mode"), l = o === "deferred";
-      o !== null && o !== "deferred" && o !== "immediate" && console.warn(
-        `[wf-algolia] Unknown wf-algolia-apply-mode='${o}' on filter-group; falling back to immediate. Valid values: 'immediate' (default) | 'deferred'.`
-      ), i.addEventListener("change", () => {
-        let s;
-        if (i.multiple) {
-          let c = [...i.selectedOptions].map((m) => m.value).filter(Boolean);
-          s = c.length === 0 ? null : {
-            type: "checkbox",
-            match: "or",
-            values: new Set(c)
-          };
-        } else {
-          let { value: c } = i;
-          s = c ? {
-            type: "checkbox",
-            match: "or",
-            values: /* @__PURE__ */ new Set([c])
-          } : null;
-        }
-        if (l) {
-          s === null ? delete STAGING_STATE[r] : stageFilter(r, s), i.setAttribute("data-wf-algolia-staged", "true"), renderSelectedValues(), renderSelectedCounts();
-          let c = t.getAttribute("wf-algolia-group-id");
-          c && isParentGroup(c) && emit("filter:parent-stage-change", {
-            field: r
-          }), closeDropdownOnPick(i);
-          return;
-        }
-        s === null ? delete FILTER_STATE[r] : FILTER_STATE[r] = s, closeDropdownOnPick(i), e();
-      });
-    });
-  }
+
+  // src/filters/standalone-filter-groups.js
   var standaloneParentSelection = /* @__PURE__ */ new Map();
   var linkTemplateByGroup = /* @__PURE__ */ new Map();
   var slugifyByGroup = /* @__PURE__ */ new Map();
@@ -5686,6 +5753,9 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       );
     }
   }
+
+  // src/recommend/recommend.js
+  var import_recommend = __toESM(require_recommend_umd(), 1);
   function getMaxRecommendations(e) {
     let t = e.getAttribute("wf-algolia-max-results");
     if (!t) return 8;
@@ -5742,6 +5812,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       }
     }
   }
+
+  // src/render/detail.js
   function findArrayWrapper(e) {
     let t = e.closest('[wf-algolia-element="array-wrapper"]');
     return t || e.parentElement;
@@ -5810,6 +5882,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       console.error("[wf-algolia] Detail page fetch failed:", u);
     });
   }
+
+  // src/search/autocomplete.js
   var warnedMultiAnchorCard = /* @__PURE__ */ new WeakSet();
   function initAutocomplete(e, t, n) {
     (n.get("autocomplete") || []).forEach((i) => {
@@ -5914,6 +5988,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       });
     });
   }
+
+  // src/search/multi-search.js
   function initMergedSearch(e, t, n) {
     document.querySelectorAll("[wf-algolia-index]").forEach((r) => {
       let i = r.getAttribute("wf-algolia-index");
@@ -6019,6 +6095,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       });
     });
   }
+
+  // src/search/search.js
   function initScopedSearch(e, t, n) {
     (n.get("search-input") || []).filter((i) => !!i.closest("[wf-algolia-index]")).forEach((i) => {
       let o = i.closest("[wf-algolia-index]"), l = o.getAttribute("wf-algolia-index"), s = o.querySelector('[wf-algolia-element="results"]'), c = s ? findTemplateFor(s, n) : null, m = o.querySelector('[wf-algolia-element="no-results"]'), g = o.querySelector('[wf-algolia-element="loader"]'), u = parseInt(o.getAttribute("wf-algolia-hits") || "8");
@@ -6070,6 +6148,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       });
     });
   }
+
+  // src/browse/static-list.js
   var STATIC_DEFAULT_PER_PAGE = 12;
   var warnedStaticNoIndex = /* @__PURE__ */ new WeakSet();
   var warnedStaticBadFilter = /* @__PURE__ */ new WeakSet();
@@ -6121,6 +6201,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       hideElement(g), console.error("[wf-algolia] static list query failed:", y);
     });
   }
+
+  // src/index.js
   function handleFormBlocks() {
     let e = /* @__PURE__ */ new Set();
     document.querySelectorAll("[wf-algolia-element]").forEach((t) => {

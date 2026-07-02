@@ -1,6 +1,6 @@
 export default [
   {
-    files: ['src/app.carved.js'],
+    files: ['src/**/*.js'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
