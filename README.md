@@ -1,8 +1,16 @@
-# wf-algolia-re — reverse-engineered fork of `@candid-leap/wf-algolia`
+# wf-algolia — The Starters' fork of `@candid-leap/wf-algolia`
 
-Owned fork of the wf-algolia CDN script, reconstructed from the published npm dist
-(ISC license permits this). Goal: full control over platform features now that
-Candid Leap no longer builds for us.
+Owned fork of the wf-algolia CDN script (attribute-driven Algolia search for
+Webflow), reconstructed from the published npm dist under its ISC license (see
+`LICENSE` — original © Candidleap). Goal: full control over platform features
+now that upstream no longer builds for us.
+
+- **Repo:** `the-starters/wf-algolia` (local checkout: `platform-search/wf-algolia-re/`)
+- **Docs:** [`docs/attributes-quickref.md`](docs/attributes-quickref.md) (our reference),
+  [`docs/public-api.d.ts`](docs/public-api.d.ts) (typed `window.WfAlgolia` surface);
+  upstream docs at https://wf-algolia-docs.candidleap.com/ stay valid while we keep the grammar.
+- **Examples:** [`examples/`](examples/) — demo pages on Algolia's public demo index.
+- **CDN (once released):** `https://cdn.jsdelivr.net/gh/the-starters/wf-algolia@latest/dist/index.min.js`
 
 ## Status
 
@@ -23,7 +31,9 @@ src/app.carved.js            the deobfuscation target: app code with npm vendor 
 docs/public-api.d.ts         upstream-published types for window.WfAlgolia (rich JSDoc)
 docs/upstream-package.json   upstream package.json (deps, build scripts)
 docs/MODULE-MAP.md           line-range → original-module map + symbol rename tables
-dist/                        our rebuilt output
+docs/attributes-quickref.md  our condensed attribute/API reference
+examples/                    demo pages (Algolia public demo app; load ../dist/index.js)
+dist/                        rebuilt output — COMMITTED (jsDelivr serves it from GitHub)
 ```
 
 ## Key facts

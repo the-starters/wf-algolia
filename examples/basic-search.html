@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>wf-algolia Webflow Example</title>
+    <style>
+      body {
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        margin: 0;
+        color: #17202a;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .shell {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 32px 20px;
+      }
+
+      .nav {
+        border-bottom: 1px solid #d8dee5;
+        background: #ffffff;
+      }
+
+      .explore {
+        display: grid;
+        grid-template-columns: 220px 220px minmax(0, 1fr);
+        gap: 20px;
+        padding: 20px 0;
+      }
+
+      .filter-list,
+      .preview-grid,
+      .result-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .filter-button,
+      .card,
+      .search {
+        border: 1px solid #d8dee5;
+        border-radius: 6px;
+        background: #ffffff;
+      }
+
+      .filter-button {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+
+      .filter-button.is-active {
+        border-color: #1f7a6d;
+        background: #eef8f5;
+      }
+
+      .card {
+        display: grid;
+        grid-template-columns: 64px minmax(0, 1fr);
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .card img {
+        width: 64px;
+        height: 64px;
+        border-radius: 6px;
+        object-fit: cover;
+        background: #edf0f3;
+      }
+
+      .search {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px 14px;
+        font: inherit;
+      }
+
+      .result-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        margin-top: 20px;
+      }
+
+      .is-hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="nav">
+      <div class="shell">
+        <input class="search" wf-algolia-element="search-input" type="search" placeholder="Search freelancers" />
+
+        <div class="explore">
+          <div
+            class="filter-list"
+            wf-algolia-element="filter-group"
+            wf-algolia-index="Freelancers3.0-dev"
+            wf-algolia-facet="categories.lvl0"
+            wf-algolia-type="radio"
+            wf-algolia-group-id="explore-lvl0"
+            wf-algolia-link-template="/subcategories/{value}"
+            wf-algolia-slugify="true"
+          >
+            <button class="filter-button" wf-algolia-element="filter-template" type="button">
+              <span wf-algolia-element="filter-value-text"></span>
+              <span wf-algolia-element="filter-count"></span>
+            </button>
+          </div>
+
+          <div
+            class="filter-list"
+            wf-algolia-element="filter-group"
+            wf-algolia-index="Freelancers3.0-dev"
+            wf-algolia-facet="categories.lvl1"
+            wf-algolia-type="radio"
+            wf-algolia-group-id="explore-lvl1"
+            wf-algolia-refines="explore-lvl0"
+            wf-algolia-when-parent-empty="hide"
+            wf-algolia-link-template="/subcategories/{value}"
+            wf-algolia-slugify="true"
+          >
+            <button class="filter-button" wf-algolia-element="filter-template" type="button">
+              <span wf-algolia-element="filter-value-text"></span>
+              <span wf-algolia-element="filter-count"></span>
+            </button>
+          </div>
+
+          <div
+            class="preview-grid"
+            wf-algolia-element="hit-preview"
+            wf-algolia-index="Freelancers3.0-dev"
+            wf-algolia-field="categories.lvl0"
+            wf-algolia-value="Design"
+            wf-algolia-hits-per-preview="4"
+          >
+            <a class="card" wf-algolia-hit-link-template="/hire/{slug}">
+              <img wf-algolia-image="profileImage" alt="" />
+              <span>
+                <strong wf-algolia-text="name"></strong><br />
+                <small wf-algolia-text="headline"></small>
+              </span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <main class="shell">
+      <section
+        wf-algolia-element="browse"
+        wf-algolia-index="Freelancers3.0-dev"
+        wf-algolia-per-page="12"
+        wf-algolia-pagination="load-more"
+        wf-algolia-url-sync="true"
+      >
+        <input class="search" wf-algolia-element="browse-search" type="search" placeholder="Search all freelancers" />
+
+        <div class="result-grid" wf-algolia-element="results">
+          <a class="card" wf-algolia-element="template" wf-algolia-link="slug" wf-algolia-link-prefix="/hire/">
+            <img wf-algolia-image="profileImage|avatar|image" wf-algolia-alt="name|title" alt="" />
+            <span>
+              <strong wf-algolia-text="name|title" wf-algolia-highlight="true"></strong><br />
+              <small wf-algolia-snippet="bio|description"></small>
+            </span>
+          </a>
+        </div>
+
+        <p wf-algolia-element="no-results">No results found.</p>
+        <p wf-algolia-element="loader">Loading...</p>
+        <p wf-algolia-element="results-count">Showing {shown} of {total}</p>
+        <button wf-algolia-element="page-prev" type="button">Previous</button>
+        <button wf-algolia-element="page-next" type="button">Next</button>
+      </section>
+    </main>
+
+    <script
+      src="../dist/index.js"
+      data-app-id="YOUR_ALGOLIA_APP_ID"
+      data-search-key="YOUR_SEARCH_ONLY_API_KEY"
+      data-insights="true"
+      data-debounce="250"
+      data-highlight-tag="mark"
+    ></script>
+  </body>
+</html>

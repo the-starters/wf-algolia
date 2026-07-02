@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>wf-algolia — Multi-Index Test</title>
+    <style>
+      :root {
+        --line: #d8dee5;
+        --ink: #17202a;
+        --muted: #5b6b7b;
+        --accent: #1f7a6d;
+        --accent-bg: #eef8f5;
+      }
+      * { box-sizing: border-box; }
+      body {
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+          BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        color: var(--ink);
+        background: #f6f8fa;
+      }
+      a { color: inherit; text-decoration: none; }
+      .shell { max-width: 1120px; margin: 0 auto; padding: 24px 20px; }
+
+      .banner {
+        background: #0f2c2a;
+        color: #d7f0ea;
+        padding: 14px 20px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .banner code { background: rgba(255,255,255,.12); padding: 1px 5px; border-radius: 4px; }
+
+      section.test {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 24px;
+      }
+      h2 { margin: 0 0 4px; font-size: 18px; }
+      .desc { margin: 0 0 16px; color: var(--muted); font-size: 13px; }
+      .tag {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-bg);
+        border-radius: 4px;
+        padding: 2px 8px;
+        margin-bottom: 8px;
+      }
+
+      .search {
+        width: 100%;
+        padding: 12px 14px;
+        font: inherit;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .section-label {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: var(--muted);
+        margin: 18px 0 8px;
+      }
+
+      .result-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 12px;
+        margin-top: 8px;
+      }
+      /* Federated sections: the template MUST be a direct child of the
+         [wf-algolia-element="section"], so the section itself is the grid. */
+      [wf-algolia-element="section"] {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+      [wf-algolia-element="section"] .section-label { grid-column: 1 / -1; margin: 14px 0 2px; }
+      .card {
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr);
+        gap: 12px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px;
+        background: #fff;
+      }
+      .card img {
+        width: 56px; height: 56px;
+        border-radius: 6px; object-fit: contain;
+        background: #f1f3f5;
+      }
+      .card strong { font-size: 13px; line-height: 1.3; }
+      .card .price { color: var(--accent); font-weight: 600; font-size: 13px; }
+      .card small { color: var(--muted); font-size: 11px; }
+
+      .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+      .pill {
+        border: 1px solid var(--line);
+        background: #fff;
+        border-radius: 999px;
+        padding: 7px 14px;
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .pill.is-active { border-color: var(--accent); background: var(--accent-bg); color: var(--accent); font-weight: 600; }
+
+      .status { font-size: 12px; color: var(--muted); margin: 10px 0; }
+      .divider { border: 0; border-top: 1px dashed var(--line); margin: 16px 0; }
+      .is-hidden { display: none !important; }
+    </style>
+  </head>
+  <body>
+    <div class="banner">
+      <strong>wf-algolia multi-index test.</strong> Wired to Algolia's public
+      demo app <code>latency</code> (search-only key). Indexes:
+      <code>instant_search</code> (primary), <code>instant_search_price_asc</code> /
+      <code>instant_search_price_desc</code> (sort replicas),
+      <code>bestbuy</code> and <code>ikea</code> (separate indexes).
+    </div>
+
+    <div class="shell">
+      <!-- ════════════════════════════════════════════════════════════════
+           TEST 1 — search-wrapper with multiple <section> children.
+           One input fans out to 3 indexes via multipleQueries; each section
+           renders into its own template. Divider shows when >1 section hits.
+      ════════════════════════════════════════════════════════════════ -->
+      <section class="test">
+        <span class="tag">Multi-index #1</span>
+        <h2>Federated search-wrapper (3 indexes, 3 sections)</h2>
+        <p class="desc">
+          A single <code>search-input</code> queries
+          <code>instant_search</code>, <code>bestbuy</code>, and
+          <code>ikea</code> in one <code>multipleQueries</code> request. Each
+          <code>section</code> declares its own <code>wf-algolia-index</code>
+          and renders its own results.
+        </p>
+
+        <div wf-algolia-element="search-wrapper">
+          <input
+            class="search"
+            wf-algolia-element="search-input"
+            type="search"
+            placeholder="Try: laptop, headphones, backpack…"
+            value="laptop"
+          />
+
+          <div wf-algolia-element="results">
+            <!-- Section A: instant_search (uses price).
+                 NOTE: the template is a DIRECT child of the section — the
+                 library registers a template's container as its immediate
+                 parent, so a nested wrapper would break federated rendering. -->
+            <div wf-algolia-element="section" wf-algolia-index="instant_search" wf-algolia-hits="3">
+              <div class="section-label">Best Buy catalog · instant_search</div>
+              <a class="card" wf-algolia-element="template" wf-algolia-link-url="url">
+                <img wf-algolia-image="image" wf-algolia-alt="name" alt="" />
+                <span>
+                  <strong wf-algolia-text="name" wf-algolia-highlight="true"></strong><br />
+                  <span class="price" wf-algolia-text="price" wf-algolia-format="currency"></span>
+                  <small wf-algolia-text="brand"></small>
+                </span>
+              </a>
+            </div>
+
+            <hr class="divider" wf-algolia-element="divider" />
+
+            <!-- Section B: bestbuy (uses salePrice / manufacturer) -->
+            <div wf-algolia-element="section" wf-algolia-index="bestbuy" wf-algolia-hits="3">
+              <div class="section-label">Best Buy promo · bestbuy</div>
+              <a class="card" wf-algolia-element="template" wf-algolia-link-url="url">
+                <img wf-algolia-image="image|thumbnailImage" wf-algolia-alt="name" alt="" />
+                <span>
+                  <strong wf-algolia-text="name" wf-algolia-highlight="true"></strong><br />
+                  <span class="price" wf-algolia-text="salePrice" wf-algolia-format="currency"></span>
+                  <small wf-algolia-text="manufacturer"></small>
+                </span>
+              </a>
+            </div>
+
+            <!-- Section C: ikea -->
+            <div wf-algolia-element="section" wf-algolia-index="ikea" wf-algolia-hits="3">
+              <div class="section-label">IKEA · ikea</div>
+              <a class="card" wf-algolia-element="template" wf-algolia-link-url="url">
+                <img wf-algolia-image="image" wf-algolia-alt="name" alt="" />
+                <span>
+                  <strong wf-algolia-text="name" wf-algolia-highlight="true"></strong><br />
+                  <span class="price" wf-algolia-text="price" wf-algolia-format="currency"></span>
+                  <small wf-algolia-text="type"></small>
+                </span>
+              </a>
+            </div>
+
+            <p wf-algolia-element="no-results">No results in any index.</p>
+            <p wf-algolia-element="loader" class="status">Searching all indexes…</p>
+          </div>
+
+          <p class="status" wf-algolia-element="results-count">Showing {shown} of {total}</p>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════════════════
+           TEST 2 — comma-separated indexes merged into a single list.
+           wf-algolia-index="instant_search,bestbuy" on a scoped wrapper.
+      ════════════════════════════════════════════════════════════════ -->
+      <section class="test">
+        <span class="tag">Multi-index #2</span>
+        <h2>Comma-separated indexes, merged list</h2>
+        <p class="desc">
+          One scoped wrapper with
+          <code>wf-algolia-index="instant_search,bestbuy"</code>. Hits from both
+          indexes are merged into a single result list.
+        </p>
+
+        <div wf-algolia-index="instant_search,bestbuy" wf-algolia-hits="8">
+          <input
+            class="search"
+            wf-algolia-element="search-input"
+            type="search"
+            placeholder="Try: camera, tv…"
+            value="camera"
+          />
+          <div class="result-grid" wf-algolia-element="results">
+            <a class="card" wf-algolia-element="template" wf-algolia-link-url="url">
+              <img wf-algolia-image="image|thumbnailImage" wf-algolia-alt="name" alt="" />
+              <span>
+                <strong wf-algolia-text="name" wf-algolia-highlight="true"></strong><br />
+                <span class="price" wf-algolia-text="price|salePrice" wf-algolia-format="currency"></span>
+                <small wf-algolia-text="brand|manufacturer"></small>
+              </span>
+            </a>
+          </div>
+          <p wf-algolia-element="no-results">No results.</p>
+          <p wf-algolia-element="loader" class="status">Searching…</p>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════════════════
+           TEST 3 — Browse on ONE index + checkbox "source" filter (one/many/all)
+           + sort replicas.
+
+           This is the idiomatic Algolia way to get "filter for one, many, or
+           all" semantics: a single index where each record carries a discriminator
+           field (here we use the faceted `categories` attribute as a stand-in for
+           a production `source`/`type` field, e.g. catalog | bestbuy | ikea), and
+           a checkbox filter-group with wf-algolia-match="or".
+
+             - none checked  → no facet filter → ALL sources
+             - one checked   → that source only
+             - many checked  → OR union of the checked sources (with live counts)
+
+           Separate Algolia indexes can't be OR-combined by checkboxes — only
+           facet values within a single index can. That's why this approach pulls
+           everything into one index.
+      ════════════════════════════════════════════════════════════════ -->
+      <section class="test">
+        <span class="tag">Multi-index #3</span>
+        <h2>One index + checkbox "source" filter (one / many / all)</h2>
+        <p class="desc">
+          One browse on <code>instant_search</code>. The checkboxes are a
+          <code>filter-group</code> with <code>wf-algolia-match="or"</code> over the
+          <code>categories</code> facet (standing in for a production
+          <code>source</code> field). Check none for all, one for a single source,
+          or several for their OR union — each with a live count. <strong>Sort</strong>
+          replicas still apply on top.
+        </p>
+
+        <section
+          wf-algolia-element="browse"
+          wf-algolia-index="instant_search"
+          wf-algolia-per-page="6"
+          wf-algolia-pagination="load-more"
+        >
+          <input class="search" wf-algolia-element="browse-search" type="search" placeholder="Search within the selected sources…" />
+
+          <div class="toolbar" style="margin-top:12px; align-items:center;">
+            <span class="section-label" style="margin:0 4px 0 0;">Sources:</span>
+            <div
+              class="toolbar"
+              wf-algolia-element="filter-group"
+              wf-algolia-field="categories"
+              wf-algolia-type="checkbox"
+              wf-algolia-match="or"
+              style="margin:0; gap:8px;"
+            >
+              <button class="pill" wf-algolia-element="filter-item" wf-algolia-value="Computers & Tablets" type="button">
+                <span wf-algolia-element="filter-value-text">Computers &amp; Tablets</span>
+                <span wf-algolia-element="filter-count" style="opacity:.6;"></span>
+              </button>
+              <button class="pill" wf-algolia-element="filter-item" wf-algolia-value="Cell Phones" type="button">
+                <span wf-algolia-element="filter-value-text">Cell Phones</span>
+                <span wf-algolia-element="filter-count" style="opacity:.6;"></span>
+              </button>
+              <button class="pill" wf-algolia-element="filter-item" wf-algolia-value="Audio" type="button">
+                <span wf-algolia-element="filter-value-text">Audio</span>
+                <span wf-algolia-element="filter-count" style="opacity:.6;"></span>
+              </button>
+              <button class="pill" wf-algolia-element="filter-item" wf-algolia-value="Appliances" type="button">
+                <span wf-algolia-element="filter-value-text">Appliances</span>
+                <span wf-algolia-element="filter-count" style="opacity:.6;"></span>
+              </button>
+            </div>
+            <button class="pill" wf-algolia-button="reset" type="button">Reset</button>
+            <span class="status" style="align-self:center;">
+              <span wf-algolia-element="filter-selected-count" wf-algolia-field="categories">0</span> selected
+            </span>
+          </div>
+
+          <div class="toolbar" wf-algolia-element="sort-group">
+            <span class="section-label" style="margin:0 4px 0 0;align-self:center;">Sort:</span>
+            <button class="pill" wf-algolia-element="sort-item" type="button">Relevance</button>
+            <button class="pill" wf-algolia-element="sort-item" wf-algolia-sort-index="instant_search_price_asc" type="button">Price ↑</button>
+            <button class="pill" wf-algolia-element="sort-item" wf-algolia-sort-index="instant_search_price_desc" type="button">Price ↓</button>
+            <span class="status" wf-algolia-element="sort-selected-label" style="align-self:center;">{value}</span>
+          </div>
+
+          <div class="result-grid" wf-algolia-element="results">
+            <a class="card" wf-algolia-element="template" wf-algolia-link-url="url">
+              <img wf-algolia-image="image|thumbnailImage" wf-algolia-alt="name" alt="" />
+              <span>
+                <strong wf-algolia-text="name" wf-algolia-highlight="true"></strong><br />
+                <span class="price" wf-algolia-text="price|salePrice" wf-algolia-format="currency"></span>
+                <small wf-algolia-text="brand|manufacturer|type"></small>
+              </span>
+            </a>
+          </div>
+
+          <p wf-algolia-element="no-results">No results found.</p>
+          <p wf-algolia-element="loader" class="status">Loading…</p>
+          <p class="status" wf-algolia-element="results-count">Showing {shown} of {total}</p>
+          <button class="pill" wf-algolia-element="page-next" type="button" style="margin-top:8px;">Load more</button>
+        </section>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════════════════
+           TEST 4 — Autocomplete overlay with multiple sections (per index).
+      ════════════════════════════════════════════════════════════════ -->
+      <section class="test">
+        <span class="tag">Multi-index #4</span>
+        <h2>Autocomplete overlay grouped by index</h2>
+        <p class="desc">
+          As you type, the autocomplete panel shows a labeled group per index
+          (<code>instant_search</code> and <code>bestbuy</code>).
+        </p>
+
+        <div style="position:relative;">
+          <input class="search" wf-algolia-element="search-input" type="search" placeholder="Start typing: ipad, speaker…" />
+          <div wf-algolia-element="autocomplete" style="margin-top:8px;">
+            <div wf-algolia-element="autocomplete-section" wf-algolia-index="instant_search" wf-algolia-hits="4">
+              <div class="section-label">Catalog</div>
+              <a class="card" wf-algolia-element="autocomplete-template" wf-algolia-link-url="url">
+                <img wf-algolia-image="image" wf-algolia-alt="name" alt="" />
+                <span>
+                  <strong wf-algolia-text="name" wf-algolia-highlight="true"></strong><br />
+                  <span class="price" wf-algolia-text="price" wf-algolia-format="currency"></span>
+                </span>
+              </a>
+            </div>
+            <div wf-algolia-element="autocomplete-section" wf-algolia-index="bestbuy" wf-algolia-hits="4">
+              <div class="section-label">Promotions</div>
+              <a class="card" wf-algolia-element="autocomplete-template" wf-algolia-link-url="url">
+                <img wf-algolia-image="image|thumbnailImage" wf-algolia-alt="name" alt="" />
+                <span>
+                  <strong wf-algolia-text="name" wf-algolia-highlight="true"></strong><br />
+                  <span class="price" wf-algolia-text="salePrice" wf-algolia-format="currency"></span>
+                </span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!--
+      The bundle defers init to window.Webflow.push(fn). On a real Webflow site
+      Webflow.js drains that queue on DOM-ready. This standalone test page has no
+      Webflow runtime, so we provide a minimal shim that runs pushed callbacks on
+      DOM-ready. Remove this block when embedding inside an actual Webflow site.
+    -->
+    <script>
+      window.Webflow = window.Webflow || [];
+      window.Webflow.push = function (fn) {
+        if (typeof fn !== "function") return;
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", fn);
+        } else {
+          fn();
+        }
+      };
+    </script>
+
+    <script
+      src="../dist/index.js"
+      data-app-id="latency"
+      data-search-key="6be0576ff61c053d5f9a3225e2a90f76"
+      data-debounce="250"
+      data-highlight-tag="mark"
+    ></script>
+  </body>
+</html>
