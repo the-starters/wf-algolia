@@ -46,7 +46,7 @@ Other script options: `data-insights`, `data-insights-cookie`, `data-autocomplet
 | `wf-algolia-snippet` / `wf-algolia-highlight="true"` | Algolia snippet/highlight variants |
 | `wf-algolia-image` / `wf-algolia-alt` | Image src / alt |
 | `wf-algolia-link="slug"` + `-prefix` / `-suffix` / `-folder` / `-slugify` / `-url` | Anchor href assembly |
-| `wf-algolia-format` | `rating` / `year` / `currency` / `number` |
+| `wf-algolia-format` | `rating` / `year` / `currency` / `number` / `short-name` (v1.0.5+: `John Paul Dionisio` → `John P. D.`; shared vocabulary with wf-xano + quiz-results.js) |
 | `wf-algolia-if="expr"` | Conditional show: truthy field or `===`/`!==`/`>`/`>=`/`<`/`<=` comparison |
 | `wf-algolia-display="flex"` | display value used when showing (default `block`) |
 

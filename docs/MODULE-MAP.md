@@ -280,7 +280,7 @@ Format: `minified` → `proposedName` — purpose.
 |---|---|---|
 | `Fs` | `COMPARATORS` | `["!==","===",">=","<=",">","<"]` (order matters) |
 | `xi` | `evalCondition` | Evaluate `wf-algolia-if` expressions against a hit |
-| `vn` | `formatValue` | `wf-algolia-format`: rating (★ n.n), year, currency ($n.nn), number (locale) |
+| `vn` | `formatValue` | `wf-algolia-format`: rating (★ n.n), year, currency ($n.nn), number (locale), short-name (John Paul Dionisio → John P. D.) |
 | `Ii` | `applySlugifyAttr` | Slugify a link value when `wf-algolia-slugify="true"` |
 
 ### 2.17 render/populate.ts (1401–1529)

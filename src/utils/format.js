@@ -78,6 +78,14 @@ export function formatValue(e, t) {
       let n = parseFloat(e);
       return isNaN(n) ? "" : n.toLocaleString();
     }
+    case "short-name": {
+      let n = String(e).trim().split(/\s+/).filter(Boolean);
+      return n.length
+        ? [n[0]]
+            .concat(n.slice(1).map((r) => r.charAt(0).toUpperCase() + "."))
+            .join(" ")
+        : "";
+    }
     default:
       return String(e);
   }
