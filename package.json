@@ -1,6 +1,6 @@
 {
   "name": "@the-starters/wf-algolia",
-  "version": "1.0.4-re.0",
+  "version": "1.0.5",
   "description": "Reverse-engineered fork of @candid-leap/wf-algolia (ISC) — attribute-driven Algolia search for Webflow.",
   "license": "ISC",
   "type": "module",
