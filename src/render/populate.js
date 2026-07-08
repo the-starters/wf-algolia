@@ -4,6 +4,7 @@ import { sanitizeHtml, sanitizeUrl } from "../utils/sanitize.js";
 import { getPath } from "../utils/misc.js";
 import { applySlugifyAttr, evalCondition, formatValue } from "../utils/format.js";
 var warnedEmptyAlt = new WeakSet();
+var warnedImgFallback = new WeakSet();
 export function populateCard(e, t, n) {
   let r = n?.highlightTag || "mark",
     i = `<${r}>`,
@@ -62,9 +63,9 @@ export function populateCard(e, t, n) {
         console.warn("[wf-algolia] populateCard snippet error:", s);
       }
     }),
-    e.querySelectorAll("[wf-algolia-image]").forEach((l) => {
+    e.querySelectorAll("[wf-algolia-image], [wf-algolia-img]").forEach((l) => {
       try {
-        let s = l.getAttribute("wf-algolia-image").split("|"),
+        let s = (l.getAttribute("wf-algolia-image") ?? ((l.hasAttribute("wf-algolia-img") && !warnedImgFallback.has(l) && (warnedImgFallback.add(l), console.warn('[wf-algolia] "wf-algolia-img" is not a valid attribute - did you mean "wf-algolia-image"? Falling back to it for now.', l))), l.getAttribute("wf-algolia-img"))).split("|"),
           c = "";
         for (let u of s) {
           let h = getPath(t, u.trim());
