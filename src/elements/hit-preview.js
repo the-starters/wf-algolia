@@ -1,5 +1,6 @@
 // elements/hit-preview — split from app.carved.js (see docs/MODULE-MAP.md)
 import { getTemplateParent } from "../core/attributes.js";
+import { getPath } from "../utils/misc.js";
 var warnedPreviewNoField = new WeakSet(),
   warnedPreviewNoValue = new WeakSet(),
   warnedPreviewNoTemplate = new WeakSet(),
@@ -81,16 +82,32 @@ function fillLinkTemplate(e, t) {
   });
 }
 function populatePreviewCard(e, t) {
+  // Field attributes accept a "|"-separated fallback chain (first non-empty
+  // field wins), matching populateCard's grammar in render/populate.js.
   (e.querySelectorAll("[wf-algolia-text]").forEach((r) => {
     let i = r.getAttribute("wf-algolia-text");
     if (!i) return;
-    let o = t[i];
+    let o;
+    for (let s of i.split("|")) {
+      let c = getPath(t, s.trim());
+      if (c != null && c !== "") {
+        o = c;
+        break;
+      }
+    }
     r.textContent = o == null ? "" : String(o);
   }),
     e.querySelectorAll("[wf-algolia-image]").forEach((r) => {
       let i = r.getAttribute("wf-algolia-image");
       if (!i) return;
-      let o = t[i];
+      let o;
+      for (let s of i.split("|")) {
+        let c = getPath(t, s.trim());
+        if (c) {
+          o = c;
+          break;
+        }
+      }
       (r.removeAttribute("srcset"),
         r.removeAttribute("data-src"),
         r.removeAttribute("data-srcset"),
