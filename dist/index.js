@@ -3150,6 +3150,7 @@
 
   // src/render/populate.js
   var warnedEmptyAlt = /* @__PURE__ */ new WeakSet();
+  var warnedImgFallback = /* @__PURE__ */ new WeakSet();
   function populateCard(e, t, n) {
     let r = n?.highlightTag || "mark", i = `<${r}>`, o = `</${r}>`;
     e.querySelectorAll("[wf-algolia-text]").forEach((l) => {
@@ -3192,9 +3193,9 @@
       } catch (s) {
         console.warn("[wf-algolia] populateCard snippet error:", s);
       }
-    }), e.querySelectorAll("[wf-algolia-image]").forEach((l) => {
+    }), e.querySelectorAll("[wf-algolia-image], [wf-algolia-img]").forEach((l) => {
       try {
-        let s = l.getAttribute("wf-algolia-image").split("|"), c = "";
+        let s = (l.getAttribute("wf-algolia-image") ?? (l.hasAttribute("wf-algolia-img") && !warnedImgFallback.has(l) && (warnedImgFallback.add(l), console.warn('[wf-algolia] "wf-algolia-img" is not a valid attribute - did you mean "wf-algolia-image"? Falling back to it for now.', l)), l.getAttribute("wf-algolia-img"))).split("|"), c = "";
         for (let u of s) {
           let h = getPath(t, u.trim());
           if (h) {
@@ -5270,12 +5271,26 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
     e.querySelectorAll("[wf-algolia-text]").forEach((r) => {
       let i = r.getAttribute("wf-algolia-text");
       if (!i) return;
-      let o = t[i];
+      let o;
+      for (let s of i.split("|")) {
+        let c = getPath(t, s.trim());
+        if (c != null && c !== "") {
+          o = c;
+          break;
+        }
+      }
       r.textContent = o == null ? "" : String(o);
     }), e.querySelectorAll("[wf-algolia-image]").forEach((r) => {
       let i = r.getAttribute("wf-algolia-image");
       if (!i) return;
-      let o = t[i];
+      let o;
+      for (let s of i.split("|")) {
+        let c = getPath(t, s.trim());
+        if (c) {
+          o = c;
+          break;
+        }
+      }
       r.removeAttribute("srcset"), r.removeAttribute("data-src"), r.removeAttribute("data-srcset"), r.src = o == null ? "" : String(o);
     });
     let n = [];
