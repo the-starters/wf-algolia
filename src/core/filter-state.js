@@ -60,3 +60,20 @@ export function stateToAlgoliaFilters(e) {
     }
   );
 }
+var HIER_RE = /^(.+)\.lvl(\d+)$/;
+export function stateToAlgoliaFiltersExcluding(e, t) {
+  let n = HIER_RE.exec(t),
+    r = {};
+  return (
+    Object.entries(e).forEach(([i, o]) => {
+      if (o.type === "checkbox" || o.type === "boolean") {
+        if (n) {
+          let l = HIER_RE.exec(i);
+          if (l && l[1] === n[1] && Number(l[2]) >= Number(n[2])) return;
+        } else if (i === t) return;
+      }
+      r[i] = o;
+    }),
+    stateToAlgoliaFilters(r)
+  );
+}

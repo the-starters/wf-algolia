@@ -2405,6 +2405,19 @@
       numericFilters: n
     };
   }
+  var HIER_RE = /^(.+)\.lvl(\d+)$/;
+  function stateToAlgoliaFiltersExcluding(e, t) {
+    let n = HIER_RE.exec(t), r = {};
+    return Object.entries(e).forEach(([i, o]) => {
+      if (o.type === "checkbox" || o.type === "boolean") {
+        if (n) {
+          let l = HIER_RE.exec(i);
+          if (l && l[1] === n[1] && Number(l[2]) >= Number(n[2])) return;
+        } else if (i === t) return;
+      }
+      r[i] = o;
+    }), stateToAlgoliaFilters(r);
+  }
 
   // src/filters/hierarchy.js
   var MAX_DEPTH = 5;
@@ -4441,7 +4454,7 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       )
     ).map((i) => i.getAttribute("wf-algolia-field")).filter((i) => !!i) : [];
   }
-  function buildPerIndexFilters() {
+  function buildPerIndexStates() {
     let e = {}, t = /* @__PURE__ */ new Map();
     document.querySelectorAll('[wf-algolia-element="filter-group"][wf-algolia-index]').forEach((n) => {
       let r = n.getAttribute("wf-algolia-field"), i = n.getAttribute("wf-algolia-index");
@@ -4452,9 +4465,28 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       Object.entries(FILTER_STATE).forEach(([i, o]) => {
         let l = t.get(i);
         (!l || l === n) && (r[i] = o);
-      }), e[n] = stateToAlgoliaFilters(r);
+      }), e[n] = r;
     }
     return e;
+  }
+  function disjunctiveAttrs(e) {
+    return Object.keys(e).filter((t) => {
+      let n = e[t];
+      return (n.type === "checkbox" || n.type === "boolean") && n.values && n.values.size > 0 && n.match !== "and";
+    });
+  }
+  function disjunctiveParams(e, t, n) {
+    return {
+      hitsPerPage: 0,
+      page: 0,
+      facets: [e],
+      facetFilters: t,
+      numericFilters: n,
+      analytics: false,
+      clickAnalytics: false,
+      attributesToRetrieve: [],
+      attributesToHighlight: []
+    };
   }
   function refreshFromPageZero() {
     browseState.page = 0, runBrowseQuery();
@@ -4482,62 +4514,109 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
         browseConfig.snippetWords,
         browseConfig.snippetAttrs
       )
-    };
-    return searchWithMiddleware(
+    }, d = disjunctiveAttrs(FILTER_STATE);
+    return (d.length === 0 ? searchWithMiddleware(
       m,
       (g) => browseClient.initIndex(s).search(browseState.query || "", g)
-    ).then((g) => {
+    ).then((g) => [g]) : multiQueryWithMiddleware(browseClient, [
+      {
+        indexName: s,
+        query: browseState.query || "",
+        params: m
+      },
+      ...d.map((p) => ({
+        indexName: s,
+        query: browseState.query || "",
+        params: disjunctiveParams(
+          p,
+          withBaseFilters(
+            stateToAlgoliaFiltersExcluding(FILTER_STATE, p).facetFilters
+          ),
+          l
+        )
+      }))
+    ]).then(({ results: p }) => p)).then((p) => {
+      let g = p[0];
       hideElement(n);
       let u = g.hits.map((h) => ({
         ...h,
         __queryID: g.queryID,
         __indexName: s
-      }));
-      i || removeInjected(e), u.length === 0 && !i ? showElement(r) : (hideElement(r), renderHits(e, t, u, i, browseConfig)), syncFacetCounts(g.facets || {}), syncDynamicFacetCounts(g.facets || {}), toggleGroupsByFacetPresence(g.facets || {}), syncFilterDOM(), renderFilterTags(FILTER_STATE, browseElements, refreshFromPageZero), syncResultsCount(g.nbHits, g.nbPages), renderPaginationControls(g.nbPages), emit("results", g);
+      })), f = {
+        ...g.facets || {}
+      };
+      d.forEach((h, y) => {
+        f[h] = p[y + 1]?.facets?.[h] ?? {};
+      }), i || removeInjected(e), u.length === 0 && !i ? showElement(r) : (hideElement(r), renderHits(e, t, u, i, browseConfig)), syncFacetCounts(f), syncDynamicFacetCounts(f), toggleGroupsByFacetPresence(f), syncFilterDOM(), renderFilterTags(FILTER_STATE, browseElements, refreshFromPageZero), syncResultsCount(g.nbHits, g.nbPages), renderPaginationControls(g.nbPages), emit("results", g);
     }).catch((g) => {
       hideElement(n), console.error("[wf-algolia] Browse query failed:", g), emit("error", g);
     });
   }
   function runFederatedQuery(e, t, n, r, i) {
-    let o = buildPerIndexFilters(), l = Math.ceil(browseState.hitsPerPage / modeIndexes.length), s = modeIndexes.map((c) => {
-      let m = o[c] || {
-        facetFilters: [],
-        numericFilters: []
-      }, g = withBaseFilters(m.facetFilters);
-      return {
+    let o = buildPerIndexStates(), l = Math.ceil(browseState.hitsPerPage / modeIndexes.length), d = disjunctiveAttrs(FILTER_STATE), p = [], s = [];
+    modeIndexes.forEach((c) => {
+      let m = o[c] || {}, { facetFilters: g, numericFilters: u } = stateToAlgoliaFilters(m);
+      s.push({
         indexName: c,
         query: browseState.query || "",
         params: {
           hitsPerPage: l,
           page: browseState.page,
           facets: ["*"],
-          facetFilters: g,
-          numericFilters: m.numericFilters,
+          facetFilters: withBaseFilters(g),
+          numericFilters: u,
           clickAnalytics: true,
           attributesToSnippet: snippetParam(
             browseConfig.snippetWords,
             browseConfig.snippetAttrs
           )
         }
-      };
+      }), p.push({
+        index: c,
+        attr: null
+      }), d.forEach((h) => {
+        h in m && (s.push({
+          indexName: c,
+          query: browseState.query || "",
+          params: disjunctiveParams(
+            h,
+            withBaseFilters(
+              stateToAlgoliaFiltersExcluding(m, h).facetFilters
+            ),
+            u
+          )
+        }), p.push({
+          index: c,
+          attr: h
+        }));
+      });
     });
     return multiQueryWithMiddleware(browseClient, s).then(({ results: c }) => {
       hideElement(n);
-      let m = [], g = {}, u = 0, h = 0;
+      let m = [], g = {}, u = 0, h = 0, f = [], v = {};
       c.forEach((y, b) => {
-        let w = modeIndexes[b], E = y.hits.map((T) => ({
+        let w = p[b];
+        if (w.attr) return;
+        let E = y.hits.map((T) => ({
           ...T,
           __queryID: y.queryID,
-          __indexName: w
+          __indexName: w.index
         }));
-        m.push(...E), u += y.nbHits, h = Math.max(h, y.nbPages), y.facets && Object.entries(y.facets).forEach(([T, k]) => {
-          let D = g[T] ?? (g[T] = {});
-          Object.entries(k).forEach(([K, C]) => {
-            D[K] = (D[K] ?? 0) + C;
+        f.push(y), m.push(...E), u += y.nbHits, h = Math.max(h, y.nbPages), v[w.index] = {
+          ...y.facets || {}
+        };
+      }), c.forEach((y, b) => {
+        let w = p[b];
+        w.attr && v[w.index] && (v[w.index][w.attr] = y.facets?.[w.attr] ?? {});
+      }), Object.values(v).forEach((y) => {
+        Object.entries(y).forEach(([b, w]) => {
+          let E = g[b] ?? (g[b] = {});
+          Object.entries(w).forEach(([T, k]) => {
+            E[T] = (E[T] ?? 0) + k;
           });
         });
       }), i || removeInjected(e), m.length === 0 && !i ? showElement(r) : (hideElement(r), renderHits(e, t, m, i, browseConfig)), syncFacetCounts(g), syncDynamicFacetCounts(g), toggleGroupsByFacetPresence(g), syncFilterDOM(), renderFilterTags(FILTER_STATE, browseElements, refreshFromPageZero), syncResultsCount(u, h), renderPaginationControls(h), emit("results", {
-        results: c,
+        results: f,
         nbHits: u,
         nbPages: h
       });
