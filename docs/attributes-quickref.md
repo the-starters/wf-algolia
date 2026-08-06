@@ -86,6 +86,52 @@ order. Applies to checkbox, radio and div/button item markup — not to native
   instant everywhere else. Skipped under `prefers-reduced-motion` or in a
   background tab.
 
+## Form Blocks (`<form>` claiming)
+
+Webflow wraps search boxes in a Form Block, and pressing Enter in one would submit
+(and navigate) the page. So wf-algolia "claims" such a form at init: it blocks
+`submit`, hides the sibling `.w-form-done` / `.w-form-fail` messages, and hides the
+form's first submit control.
+
+**Claiming is by element type, not blanket.** A form is claimed only if it contains
+at least one element that carries a native input control — the ones that trigger
+implicit submission on Enter:
+
+| Claims the host `<form>` | Why |
+| --- | --- |
+| `search-input` | text input |
+| `browse-search` | text input on a browse block |
+| `filter-search` | text input for facet-value search (SFFV) |
+| `filter-group` | wraps checkbox/radio inputs, or a native `<select>` |
+| `filter-item` | the individual checkbox/radio wrapper |
+| `range-min` / `range-max` | numeric/range inputs |
+| `sort` | native `<select>` |
+
+Everything else is render-only and **never** claims a form: `browse`, `results`,
+`hit-preview`, `no-results`, `loader`, `results-count`, `filter-count`, `section`,
+`search-wrapper`, `scope-facet`, `detail`, `recommend-grid`, `pagination`, the
+`filter-tag-*` chips, `sort-group` / `sort-item`, `mode-btn`, `page-next` /
+`page-prev`. That means you can drop a render-only browse block inside a real
+Webflow form (a cancel/contact/checkout form) and the form still submits normally.
+
+### `wf-algolia-allow-submit="true"` (1.0.10) — escape hatch
+
+Put it on the `<form>`, or on any ancestor (e.g. the `.w-form` Form Block), to force
+native/Webflow submission even when the form *does* contain claiming elements —
+e.g. a filter group legitimately nested inside a larger real form.
+
+```html
+<form wf-algolia-allow-submit="true">
+  <div wf-algolia-element="filter-group" wf-algolia-field="role">…</div>
+  <button type="submit">Send</button>
+</form>
+```
+
+When a form is not claimed, **none** of the side effects run for it: no submit
+prevention, no `.w-form-done` / `.w-form-fail` hiding, no submit-button hiding. You
+are then responsible for stopping Enter-to-submit yourself if the form has a search
+box in it.
+
 ## Pagination & sort
 
 `wf-algolia-element="pagination"` (numbered / load-more / infinite-scroll variants),

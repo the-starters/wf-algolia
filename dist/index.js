@@ -6410,11 +6410,32 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
   }
 
   // src/index.js
+  var FORM_CLAIMING_ELEMENTS = /* @__PURE__ */ new Set([
+    "search-input",
+    // text input — Enter submits the host form
+    "browse-search",
+    // text input on a browse block — same
+    "filter-search",
+    // text input for facet-value search (SFFV) — same
+    "filter-group",
+    // wraps checkbox/radio inputs, or a native <select>
+    "filter-item",
+    // the individual checkbox/radio wrapper
+    "range-min",
+    // numeric/range input
+    "range-max",
+    // numeric/range input
+    "sort"
+    // native <select> bound by initSortSelect()
+  ]);
+  var FORM_ALLOW_SUBMIT_SELECTOR = '[wf-algolia-allow-submit="true"]';
   function handleFormBlocks() {
     let e = /* @__PURE__ */ new Set();
     document.querySelectorAll("[wf-algolia-element]").forEach((t) => {
+      if (!FORM_CLAIMING_ELEMENTS.has(t.getAttribute("wf-algolia-element")))
+        return;
       let n = t.closest("form");
-      n && e.add(n);
+      n && !n.closest(FORM_ALLOW_SUBMIT_SELECTOR) && e.add(n);
     }), e.forEach((t) => {
       t.addEventListener("submit", (i) => {
         i.preventDefault(), i.stopPropagation();
