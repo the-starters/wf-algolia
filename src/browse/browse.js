@@ -346,16 +346,24 @@ function disjunctiveParams(e, t, n) {
 function refreshFromPageZero() {
   ((browseState.page = 0), runBrowseQuery());
 }
+export function ownedByStaticList(e) {
+  let t = e?.closest('[wf-algolia-element="browse"]');
+  return !!t && t.getAttribute("wf-algolia-disable-filters") === "true";
+}
+export function queryBrowseElement(e) {
+  for (let t of document.querySelectorAll(e)) if (!ownedByStaticList(t)) return t;
+  return null;
+}
 export function runBrowseQuery(e = !1) {
   (renderSelectedCounts(FILTER_STATE), renderSelectedValues(FILTER_STATE));
-  let t = document.querySelector(
+  let t = queryBrowseElement(
       '[wf-algolia-element="browse"] [wf-algolia-element="results"]',
     ),
     n = t ? findTemplateFor(t, browseElements) : null,
-    r = document.querySelector(
+    r = queryBrowseElement(
       '[wf-algolia-element="browse"] [wf-algolia-element="loader"]',
     ),
-    i = document.querySelector(
+    i = queryBrowseElement(
       '[wf-algolia-element="browse"] [wf-algolia-element="no-results"]',
     );
   return !t || !n

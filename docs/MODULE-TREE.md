@@ -45,12 +45,12 @@ and `dist/index.min.js`.
 | `src/render/template.js` | 82 | `cloneAndPopulate`, `removeInjected`, template detach, `renderHits` (+IX2 restart, view tracking) |
 | `src/render/detail.js` | 95 | Detail-mode rendering (objectID from attr/path/query, slug lookup, array-item expansion) |
 | `src/api/public-api.js` | 89 | Middleware pipeline (`searchWithMiddleware`, `multiQueryWithMiddleware`) + `exposePublicAPI` (`window.WfAlgolia`) |
-| `src/browse/browse.js` | 469 | Main browse init: mode buttons, URL restore, all filter subsystems, query dispatch (single/federated) |
+| `src/browse/browse.js` | 564 | Main browse init: mode buttons, URL restore, all filter subsystems, query dispatch (single/federated), static-list exclusion for shared-element targeting |
 | `src/browse/sort.js` | 136 | Sort groups/replica indexes, `?sort=` URL param, sort UI sync |
 | `src/browse/url-sync.js` | 185 | `?q/mode/page/f_*` state ↔ URL, `#wfa=` hash fallback >2000 chars |
 | `src/browse/static-list.js` | 89 | `wf-algolia-disable-filters="true"` one-shot static lists |
 | `src/pagination/infinite-scroll.js` | 27 | IntersectionObserver sentinel loader |
-| `src/pagination/numbered.js` | 99 | Numbered pagination controls, results-count/page-info templates |
+| `src/pagination/numbered.js` | 100 | Numbered pagination controls, results-count/page-info templates (skips static-list-owned counts) |
 | `src/search/search.js` | 72 | Scoped single-index search-input |
 | `src/search/multi-search.js` | 154 | Merged (comma-separated index) and sectioned federated search |
 | `src/search/autocomplete.js` | 148 | Sectioned dropdown autocomplete with keyboard nav |
@@ -129,7 +129,9 @@ evaluation, so evaluation order inside the cycles cannot matter:
   label-ancestor helpers in both files; the bundle had no seam.)
 - **Cycle B:** `browse/browse.js` ↔ `pagination/numbered.js` — browse's query runners call
   `renderPaginationControls`/`syncResultsCount`; numbered reads the live bindings
-  `browseState`/`urlSyncEnabled`/`paginationMode` and calls `runBrowseQuery`.
+  `browseState`/`urlSyncEnabled`/`paginationMode`, calls `runBrowseQuery`, and uses
+  `ownedByStaticList`/`queryBrowseElement` (both hoisted function declarations, called
+  only at query time) to keep static lists out of browse's shared-element targeting.
 
 No symbols had to be moved into a shared `core/state.js`: the analysis found **zero
 cross-module writes** (all mutable module vars are reassigned only in their home module;
