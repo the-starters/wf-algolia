@@ -2,7 +2,7 @@
 import { getTextTemplate, interpolate } from "../utils/format.js";
 import { FILTER_STATE } from "../core/filter-state.js";
 import { writeStateToURL } from "../browse/url-sync.js";
-import { browseState, paginationMode, runBrowseQuery, urlSyncEnabled } from "../browse/browse.js";
+import { browseState, ownedByStaticList, paginationMode, queryBrowseElement, runBrowseQuery, urlSyncEnabled } from "../browse/browse.js";
 var DEFAULT_PAGE_WINDOW = 5;
 function getPageWindow(e) {
   if (!e) return DEFAULT_PAGE_WINDOW;
@@ -40,6 +40,7 @@ export function syncResultsCount(e, t) {
   document
     .querySelectorAll('[wf-algolia-element="results-count"]')
     .forEach((n) => {
+      if (ownedByStaticList(n)) return;
       let r = Math.min(e, (browseState.page + 1) * browseState.hitsPerPage);
       renderResultsCount(n, {
         shown: r,
@@ -68,7 +69,7 @@ export function renderPaginationControls(e) {
     if (i) {
       (i.querySelectorAll(".wf-algolia-page-num").forEach((m) => m.remove()),
         (r.style.display = "none"));
-      let o = document.querySelector('[wf-algolia-element="browse"]'),
+      let o = queryBrowseElement('[wf-algolia-element="browse"]'),
         l = getPageWindow(o),
         s = Math.max(0, browseState.page - Math.floor(l / 2)),
         c = Math.min(e, s + l);

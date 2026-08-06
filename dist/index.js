@@ -4331,6 +4331,7 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
   }
   function syncResultsCount(e, t) {
     document.querySelectorAll('[wf-algolia-element="results-count"]').forEach((n) => {
+      if (ownedByStaticList(n)) return;
       let r = Math.min(e, (browseState.page + 1) * browseState.hitsPerPage);
       renderResultsCount(n, {
         shown: r,
@@ -4353,7 +4354,7 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       let i = r.parentElement;
       if (i) {
         i.querySelectorAll(".wf-algolia-page-num").forEach((m) => m.remove()), r.style.display = "none";
-        let o = document.querySelector('[wf-algolia-element="browse"]'), l = getPageWindow(o), s = Math.max(0, browseState.page - Math.floor(l / 2)), c = Math.min(e, s + l);
+        let o = queryBrowseElement('[wf-algolia-element="browse"]'), l = getPageWindow(o), s = Math.max(0, browseState.page - Math.floor(l / 2)), c = Math.min(e, s + l);
         s = Math.max(0, c - l);
         for (let m = s; m < c; m++) {
           let g = clonePageNumber(r, m, m === browseState.page);
@@ -4591,13 +4592,21 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
   function refreshFromPageZero() {
     browseState.page = 0, runBrowseQuery();
   }
+  function ownedByStaticList(e) {
+    let t = e?.closest('[wf-algolia-element="browse"]');
+    return !!t && t.getAttribute("wf-algolia-disable-filters") === "true";
+  }
+  function queryBrowseElement(e) {
+    for (let t of document.querySelectorAll(e)) if (!ownedByStaticList(t)) return t;
+    return null;
+  }
   function runBrowseQuery(e = false) {
     renderSelectedCounts(FILTER_STATE), renderSelectedValues(FILTER_STATE);
-    let t = document.querySelector(
+    let t = queryBrowseElement(
       '[wf-algolia-element="browse"] [wf-algolia-element="results"]'
-    ), n = t ? findTemplateFor(t, browseElements) : null, r = document.querySelector(
+    ), n = t ? findTemplateFor(t, browseElements) : null, r = queryBrowseElement(
       '[wf-algolia-element="browse"] [wf-algolia-element="loader"]'
-    ), i = document.querySelector(
+    ), i = queryBrowseElement(
       '[wf-algolia-element="browse"] [wf-algolia-element="no-results"]'
     );
     return !t || !n ? Promise.resolve() : (showElement(r), browseState.mode === "all" && !browseState.sort && !getCurrentSort() ? runFederatedQuery(t, n, r, i, e) : runSingleIndexQuery(t, n, r, i, e));
