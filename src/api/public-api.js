@@ -38,7 +38,7 @@ export async function multiQueryWithMiddleware(e, t) {
 export function exposePublicAPI(e, t) {
   let n = () => emit("refresh");
   window.WfAlgolia = {
-    version: "1.0.0",
+    version: "1.0.8",
     getClient: () => e,
     search: (r, i, o) =>
       e.initIndex(r).search(i, {

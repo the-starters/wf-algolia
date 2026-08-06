@@ -2551,17 +2551,138 @@
       getAncestorSelections(t, e).length === t.depth ? clearParentEmptyBehavior(t.childEl, t.whenParentEmpty) : applyParentEmptyBehavior(t.childEl, t.whenParentEmpty);
   }
 
+  // src/utils/flip.js
+  var FLIP_DURATION = 200;
+  var FLIP_EASING = "cubic-bezier(0.22, 0.61, 0.36, 1)";
+  var inFlight = /* @__PURE__ */ new WeakMap();
+  function canAnimateReorder() {
+    return !(typeof window > "u" || typeof document > "u" || document.visibilityState === "hidden" || typeof window.matchMedia == "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+  function captureRects(e) {
+    let t = /* @__PURE__ */ new Map();
+    for (let n of e) t.set(n, n.getBoundingClientRect());
+    return t;
+  }
+  function settle(e) {
+    let t = inFlight.get(e);
+    t && (inFlight.delete(e), window.clearTimeout(t.timer), t.onEnd && e.removeEventListener("transitionend", t.onEnd), e.style.transition = t.transition, e.style.transform = t.transform);
+  }
+  function playFlip(e, t) {
+    let n = [];
+    for (let r of e) {
+      let i = t.get(r);
+      if (!i) continue;
+      let o = r.getBoundingClientRect();
+      if (i.width === 0 && i.height === 0 && o.width === 0 && o.height === 0)
+        continue;
+      let l = i.left - o.left, s = i.top - o.top;
+      Math.abs(l) < 1 && Math.abs(s) < 1 || (settle(r), n.push([r, l, s]));
+    }
+    if (n.length === 0) return;
+    for (let [r, i, o] of n)
+      inFlight.set(r, {
+        transition: r.style.transition,
+        transform: r.style.transform,
+        timer: 0,
+        onEnd: null
+      }), r.style.transition = "none", r.style.transform = `translate(${i}px, ${o}px)`;
+    void n[0][0].offsetWidth;
+    for (let [r] of n) {
+      let i = inFlight.get(r);
+      if (!i) continue;
+      let o = (l) => {
+        l.target === r && l.propertyName === "transform" && settle(r);
+      };
+      i.onEnd = o, i.timer = window.setTimeout(() => settle(r), FLIP_DURATION + 80), r.addEventListener("transitionend", o), r.style.transition = `transform ${FLIP_DURATION}ms ${FLIP_EASING}`, r.style.transform = "translate(0px, 0px)";
+    }
+  }
+
+  // src/filters/filter-sort.js
+  var ORDER_KEY = "__wfAlgoliaOrder";
+  function isItemSelected(e) {
+    if (e instanceof HTMLInputElement && (e.type === "checkbox" || e.type === "radio"))
+      return e.checked;
+    let t = e.querySelector('input[type="radio"], input[type="checkbox"]');
+    return t ? t.checked : e.getAttribute("data-wf-algolia-active") === "true";
+  }
+  function isSelectedFirst(e) {
+    return e.getAttribute("wf-algolia-sort") === "selected-first";
+  }
+  function assignBaselineOrder(e) {
+    if (e.every((n) => typeof n[ORDER_KEY] == "number")) return;
+    let t = 0;
+    for (; t < e.length; ) {
+      if (typeof e[t][ORDER_KEY] == "number") {
+        t++;
+        continue;
+      }
+      let n = t;
+      for (; t < e.length && typeof e[t][ORDER_KEY] != "number"; ) t++;
+      let r = n > 0 ? e[n - 1][ORDER_KEY] : null, i = t < e.length ? e[t][ORDER_KEY] : null, o = r ?? (i !== null ? i - 1 : 0), l = i ?? o + 1, s = t - n;
+      for (let c = 0; c < s; c++)
+        e[n + c][ORDER_KEY] = o + (l - o) * (c + 1) / (s + 1);
+    }
+  }
+  function resolveHosts(e, t) {
+    let n = /* @__PURE__ */ new Map(), r = e[0].parentElement;
+    if (r && e.every((l) => l.parentElement === r))
+      return e.forEach((l) => n.set(l, l)), {
+        hosts: n,
+        parent: r
+      };
+    let i = e.map((l) => {
+      let s = l.closest('[role="listitem"]');
+      return s && t.contains(s) && s !== t ? s : l.parentElement;
+    }), o = i[0]?.parentElement ?? null;
+    return !o || o === t.ownerDocument.documentElement || i.some((l, s) => !l || l === t || l.parentElement !== o || i.indexOf(l) !== s) ? null : (e.forEach((l, s) => n.set(l, i[s])), {
+      hosts: n,
+      parent: o
+    });
+  }
+  function applyFilterItemSort(e, t = {}) {
+    let n = e.getAttribute("wf-algolia-sort");
+    if (!n || n === "natural" || n !== "selected-first" && n !== "alpha" && n !== "count")
+      return;
+    let d = [...e.querySelectorAll('[wf-algolia-element="filter-search-results"]')], r = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')].filter(
+      (u) => !d.some((h) => h.contains(u))
+    );
+    if (r.length < 2) return;
+    let a = resolveHosts(r, e);
+    if (!a) return;
+    let { hosts: f, parent: i } = a, o = (u) => u.getAttribute("wf-algolia-value") || "", l = (u) => {
+      let h = u.querySelector('[wf-algolia-element="filter-count"]'), y = parseInt((h?.textContent ?? "0").trim(), 10);
+      return Number.isFinite(y) ? y : 0;
+    }, s;
+    if (n === "selected-first") {
+      assignBaselineOrder(r);
+      let u = [...r].sort((b, w) => b[ORDER_KEY] - w[ORDER_KEY]), h = [], y = [];
+      for (let b of u) (isItemSelected(b) ? h : y).push(b);
+      s = [...h, ...y];
+    } else
+      n === "alpha" ? s = [...r].sort(
+        (u, h) => o(u).localeCompare(o(h), void 0, {
+          sensitivity: "base"
+        })
+      ) : s = [...r].sort((u, h) => l(h) - l(u));
+    if (s.every((u, h) => u === r[h])) return;
+    let p = s.map((u) => f.get(u)), c = t.animate === true && canAnimateReorder(), m = c ? captureRects(p) : null, g = document.activeElement;
+    for (let u of p) i.appendChild(u);
+    m && playFlip(p, m), g instanceof HTMLElement && e.contains(g) && document.activeElement !== g && g.focus({
+      preventScroll: true
+    });
+  }
+
   // src/filters/show-more.js
   var showMoreReapplyFns = /* @__PURE__ */ new WeakMap();
   function initShowMore() {
     document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((e) => {
       let t = parseInt(e.getAttribute("wf-algolia-limit") || "0");
       if (t <= 0) return;
-      let n = e.getAttribute("wf-algolia-hideclass") || "is-hidden", r = e.querySelector('[wf-algolia-element="filter-show-more"]'), i = e.getAttribute("wf-algolia-text-more"), o = e.getAttribute("wf-algolia-text-less"), l = r?.textContent ?? "", s = i ?? l, c = o ?? "Show less", m = false, g = () => {
+      let n = e.getAttribute("wf-algolia-hideclass") || "is-hidden", r = e.querySelector('[wf-algolia-element="filter-show-more"]'), i = e.getAttribute("wf-algolia-text-more"), o = e.getAttribute("wf-algolia-text-less"), l = r?.textContent ?? "", s = i ?? l, c = o ?? "Show less", m = false, p = isSelectedFirst(e), g = () => {
         let u = e.querySelectorAll('[wf-algolia-element="filter-item"]'), h = 0;
         u.forEach((y) => {
           let b = y.closest('[role="listitem"]') || y;
-          m || h < t ? (b.classList.remove(n), h += 1) : b.classList.add(n);
+          m || h < t || p && isItemSelected(y) ? (b.classList.remove(n), h += 1) : b.classList.add(n);
         }), r && (r.textContent = m ? c : s);
       };
       r && r.addEventListener("click", () => {
@@ -2610,7 +2731,7 @@
         let s = t.closest('[wf-algolia-element="browse"]')?.querySelector(`[wf-algolia-reset="${n}"]`);
         s instanceof HTMLInputElement && s.type === "radio" && (s.checked = true, syncWebflowInputVisual(s, true), i = s.closest("label"));
       }
-      applyActiveLabelClasses(t, i), sortFilterItems(t, n, e), reapplyShowMore(t);
+      applyActiveLabelClasses(t, i), applyFilterItemSort(t), reapplyShowMore(t);
     }), renderSelectedCounts(e), renderSelectedValues(e);
   }
   function synthesizeMissingSelected(e, t, n) {
@@ -2637,31 +2758,6 @@
       let y = u.querySelector('[wf-algolia-element="filter-count"]');
       y && (y.textContent = ""), u.querySelector("input") || (u.setAttribute("role", "button"), u.setAttribute("tabindex", "0")), c.insertBefore(u, m);
     }
-  }
-  function sortFilterItems(e, t, n) {
-    let r = e.getAttribute("wf-algolia-sort");
-    if (!r || r === "natural" || r !== "selected-first" && r !== "alpha" && r !== "count")
-      return;
-    let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')];
-    if (i.length < 2) return;
-    let o = i[0].parentElement;
-    if (!o) return;
-    for (let g of i) if (g.parentElement !== o) return;
-    let l = (g) => g.getAttribute("wf-algolia-value") || "", s = (g) => n[t]?.values?.has(l(g)) ?? false, c = (g) => {
-      let u = g.querySelector('[wf-algolia-element="filter-count"]'), h = parseInt((u?.textContent ?? "0").trim(), 10);
-      return Number.isFinite(h) ? h : 0;
-    }, m;
-    if (r === "selected-first") {
-      let g = [], u = [];
-      for (let h of i) (s(h) ? g : u).push(h);
-      m = [...g, ...u];
-    } else
-      r === "alpha" ? m = [...i].sort(
-        (g, u) => l(g).localeCompare(l(u), void 0, {
-          sensitivity: "base"
-        })
-      ) : m = [...i].sort((g, u) => c(u) - c(g));
-    for (let g of m) o.appendChild(g);
   }
   var warnedCountNoField = /* @__PURE__ */ new WeakSet();
   function resolveCountField(e) {
@@ -2999,7 +3095,9 @@
               } else delete STAGING_STATE[r];
             } else
               i === "radio" && C && delete STAGING_STATE[r], toggleStateValue(STAGING_STATE, r, D, C, o, "checkbox");
-            k.setAttribute("data-wf-algolia-staged", "true"), renderSelectedValues(), renderSelectedCounts();
+            k.setAttribute("data-wf-algolia-staged", "true"), applyFilterItemSort(n, {
+              animate: true
+            }), reapplyShowMore(n), renderSelectedValues(), renderSelectedCounts();
             let ee = n.getAttribute("wf-algolia-group-id");
             ee && isParentGroup(ee) && emit("filter:parent-stage-change", {
               field: r
@@ -3016,7 +3114,9 @@
             let C = isItemChecked(k);
             i === "radio" && C && delete FILTER_STATE[r], toggleStateValue(FILTER_STATE, r, D, C, o, "checkbox");
           }
-          syncGroupActiveClasses(n);
+          syncGroupActiveClasses(n), applyFilterItemSort(n, {
+            animate: true
+          }), reapplyShowMore(n);
           let K = n.getAttribute("wf-algolia-group-id");
           if (K && isParentGroup(K)) {
             let C = FILTER_STATE[r]?.values ?? /* @__PURE__ */ new Set();
@@ -3055,7 +3155,7 @@
           E.removeAttribute("data-wf-algolia-active");
         });
         let w = u instanceof HTMLInputElement ? u.closest("label") : null;
-        applyActiveLabelClasses(n, w), syncGroupActiveClasses(n), e();
+        applyActiveLabelClasses(n, w), syncGroupActiveClasses(n), applyFilterItemSort(n), reapplyShowMore(n), e();
       });
       let h = detectActiveLabelClasses(n, r);
       h && activeLabelClassCache.set(n, {
@@ -3080,7 +3180,7 @@
           new Event("change", {
             bubbles: true
           })
-        )), applyActiveLabelClasses(n, w), syncGroupActiveClasses(n), window.setTimeout(() => {
+        )), applyActiveLabelClasses(n, w), syncGroupActiveClasses(n), applyFilterItemSort(n), reapplyShowMore(n), window.setTimeout(() => {
           let E = FILTER_STATE[r]?.values;
           if (!E || E.size === 0) return;
           let T = null;
@@ -3091,7 +3191,7 @@
               'input[type="radio"], input[type="checkbox"]'
             );
             C && (C.checked = K, syncWebflowInputVisual(C, K), K && (T = C.closest("label")));
-          }), i === "radio" && u instanceof HTMLInputElement && u.type === "radio" && (u.checked = false, syncWebflowInputVisual(u, false)), applyActiveLabelClasses(n, T), syncGroupActiveClasses(n);
+          }), i === "radio" && u instanceof HTMLInputElement && u.type === "radio" && (u.checked = false, syncWebflowInputVisual(u, false)), applyActiveLabelClasses(n, T), syncGroupActiveClasses(n), applyFilterItemSort(n), reapplyShowMore(n);
         }, 0);
       }
     });
@@ -3342,7 +3442,7 @@
   function exposePublicAPI(e, t) {
     let n = () => emit("refresh");
     window.WfAlgolia = {
-      version: "1.0.0",
+      version: "1.0.8",
       getClient: () => e,
       search: (r, i, o) => e.initIndex(r).search(i, {
         clickAnalytics: true,
@@ -3550,7 +3650,7 @@
         E && (E.textContent = formatFacetLabel(y, u));
         let T = w.querySelector('[wf-algolia-element="filter-count"]');
         T && (T.textContent = String(b)), w.querySelector("input") || (w.setAttribute("role", "button"), w.setAttribute("tabindex", "0")), g.appendChild(w);
-      }), reapplyShowMore(n);
+      }), applyFilterItemSort(n), reapplyShowMore(n);
       let h = n.querySelector('[wf-algolia-element="filter-group-count"]');
       if (h) {
         let y = m.length, b = getTextTemplate(h, "{count}");
@@ -3719,7 +3819,7 @@
               let k = u ?? T;
               k && (renderSffvOverlay(g, r, i, E.facetHits, k, u !== null), g.style.display = "");
             } else
-              T && (renderSffvInline(r, i, E.facetHits, T), reapplyShowMore(r));
+              T && (renderSffvInline(r, i, E.facetHits, T), applyFilterItemSort(r), reapplyShowMore(r));
           } catch (w) {
             let E = w;
             if (E.status === 400 && /searchable/i.test(E.message ?? "")) {
@@ -3789,7 +3889,7 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
     let h = m.querySelector('[wf-algolia-element="filter-count"]');
     h && (h.textContent = "");
     let y = o[0]?.parentElement ?? e;
-    return y.insertBefore(m, y.firstChild), reapplyShowMore(e), m;
+    return y.insertBefore(m, y.firstChild), applyFilterItemSort(e), reapplyShowMore(e), m;
   }
 
   // src/filters/filter-tags.js

@@ -6,6 +6,8 @@ import { getTextTemplate, interpolate } from "../utils/format.js";
 import { FILTER_STATE, STAGING_STATE, stageFilter, toggleStateValue } from "../core/filter-state.js";
 import { MAX_DEPTH, applyParentEmptyBehavior, getChildLink, getGroupField, isParentGroup, parseWhenParentEmpty, registerChildLink, registerGroup } from "./hierarchy.js";
 import { renderSelectedCounts, renderSelectedValues } from "../actions/filter-actions.js";
+import { applyFilterItemSort } from "./filter-sort.js";
+import { reapplyShowMore } from "./show-more.js";
 var activeLabelClassCache = new WeakMap(),
   WF_INPUT_VISUAL_SELECTOR = `.${WEBFLOW_CSS.radioInput}, .${WEBFLOW_CSS.checkboxInput}`;
 export function syncWebflowInputVisual(e, t) {
@@ -291,6 +293,10 @@ export function initFilterGroups(e) {
                 (i === "radio" && C && delete STAGING_STATE[r],
                   toggleStateValue(STAGING_STATE, r, D, C, o, "checkbox"));
               (k.setAttribute("data-wf-algolia-staged", "true"),
+                applyFilterItemSort(n, {
+                  animate: !0,
+                }),
+                reapplyShowMore(n),
                 renderSelectedValues(),
                 renderSelectedCounts());
               let ee = n.getAttribute("wf-algolia-group-id");
@@ -315,7 +321,11 @@ export function initFilterGroups(e) {
               (i === "radio" && C && delete FILTER_STATE[r],
                 toggleStateValue(FILTER_STATE, r, D, C, o, "checkbox"));
             }
-            syncGroupActiveClasses(n);
+            (syncGroupActiveClasses(n),
+              applyFilterItemSort(n, {
+                animate: !0,
+              }),
+              reapplyShowMore(n));
             let K = n.getAttribute("wf-algolia-group-id");
             if (K && isParentGroup(K)) {
               let C = FILTER_STATE[r]?.values ?? new Set();
@@ -375,7 +385,11 @@ export function initFilterGroups(e) {
                 E.removeAttribute("data-wf-algolia-active");
               }));
           let w = u instanceof HTMLInputElement ? u.closest("label") : null;
-          (applyActiveLabelClasses(n, w), syncGroupActiveClasses(n), e());
+          (applyActiveLabelClasses(n, w),
+            syncGroupActiveClasses(n),
+            applyFilterItemSort(n),
+            reapplyShowMore(n),
+            e());
         });
       let h = detectActiveLabelClasses(n, r);
       h &&
@@ -423,6 +437,8 @@ export function initFilterGroups(e) {
             )),
           applyActiveLabelClasses(n, w),
           syncGroupActiveClasses(n),
+          applyFilterItemSort(n),
+          reapplyShowMore(n),
           window.setTimeout(() => {
             let E = FILTER_STATE[r]?.values;
             if (!E || E.size === 0) return;
@@ -451,7 +467,9 @@ export function initFilterGroups(e) {
                 u.type === "radio" &&
                 ((u.checked = !1), syncWebflowInputVisual(u, !1)),
               applyActiveLabelClasses(n, T),
-              syncGroupActiveClasses(n));
+              syncGroupActiveClasses(n),
+              applyFilterItemSort(n),
+              reapplyShowMore(n));
           }, 0));
       }
     }));

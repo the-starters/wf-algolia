@@ -3,6 +3,7 @@ import { getTextTemplate, interpolate } from "../utils/format.js";
 import { FILTER_STATE } from "../core/filter-state.js";
 import { formatFacetLabel, getLabelMode } from "./hierarchy.js";
 import { reapplyShowMore } from "./show-more.js";
+import { applyFilterItemSort } from "./filter-sort.js";
 import { removeInjected } from "../render/template.js";
 import { cssEscape, findTemplateFor, getTemplateParent } from "../core/attributes.js";
 export async function fetchFacetValues(e, t, n, r) {
@@ -113,6 +114,7 @@ async function populateDynamicGroup(e, t, n, r) {
             (w.setAttribute("role", "button"), w.setAttribute("tabindex", "0")),
           g.appendChild(w));
       }),
+      applyFilterItemSort(n),
       reapplyShowMore(n));
     let h = n.querySelector('[wf-algolia-element="filter-group-count"]');
     if (h) {

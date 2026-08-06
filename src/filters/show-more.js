@@ -1,4 +1,5 @@
 // filters/show-more — split from app.carved.js (see docs/MODULE-MAP.md)
+import { isItemSelected, isSelectedFirst } from "./filter-sort.js";
 var showMoreReapplyFns = new WeakMap();
 export function initShowMore() {
   document
@@ -14,12 +15,15 @@ export function initShowMore() {
         s = i ?? l,
         c = o ?? "Show less",
         m = !1,
+        p = isSelectedFirst(e),
         g = () => {
           let u = e.querySelectorAll('[wf-algolia-element="filter-item"]'),
             h = 0;
           (u.forEach((y) => {
             let b = y.closest('[role="listitem"]') || y;
-            m || h < t ? (b.classList.remove(n), (h += 1)) : b.classList.add(n);
+            m || h < t || (p && isItemSelected(y))
+              ? (b.classList.remove(n), (h += 1))
+              : b.classList.add(n);
           }),
             r && (r.textContent = m ? c : s));
         };

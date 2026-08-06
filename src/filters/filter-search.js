@@ -3,6 +3,7 @@ import { getTextTemplate, interpolate } from "../utils/format.js";
 import { debounce } from "../utils/debounce.js";
 import { FILTER_STATE } from "../core/filter-state.js";
 import { reapplyShowMore } from "./show-more.js";
+import { applyFilterItemSort } from "./filter-sort.js";
 import { removeInjected } from "../render/template.js";
 import { findTemplateFor, getTemplateParent } from "../core/attributes.js";
 var SFFV_DEFAULT_DEBOUNCE = 200,
@@ -188,7 +189,9 @@ export function initFilterSearch(e, t, n) {
                   (g.style.display = ""));
               } else
                 T &&
-                  (renderSffvInline(r, i, E.facetHits, T), reapplyShowMore(r));
+                  (renderSffvInline(r, i, E.facetHits, T),
+                  applyFilterItemSort(r),
+                  reapplyShowMore(r));
             } catch (w) {
               let E = w;
               if (E.status === 400 && /searchable/i.test(E.message ?? "")) {
@@ -301,5 +304,10 @@ function ensureFilterItem(e, t, n) {
   let h = m.querySelector('[wf-algolia-element="filter-count"]');
   h && (h.textContent = "");
   let y = o[0]?.parentElement ?? e;
-  return (y.insertBefore(m, y.firstChild), reapplyShowMore(e), m);
+  return (
+    y.insertBefore(m, y.firstChild),
+    applyFilterItemSort(e),
+    reapplyShowMore(e),
+    m
+  );
 }

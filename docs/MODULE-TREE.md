@@ -22,6 +22,7 @@ and `dist/index.min.js`.
 | `src/core/accessibility.js` | 38 | ARIA roles + keyboard handlers on inputs, listboxes, status regions, div filter-items |
 | `src/core/config.js` | 52 | `initClient` (algoliasearch singleton) + `initConfig` (script-tag `data-*` parsing) |
 | `src/vendor/finsweet.js` | 58 | Vendored `@finsweet/ts-utils` remnants: `WEBFLOW_CSS`, `getSiteId`, `restartWebflow` |
+| `src/utils/flip.js` | 63 | FLIP reorder transition helper (`canAnimateReorder`, `captureRects`, `playFlip`) |
 | `src/utils/dom.js` | 41 | `closeDropdownOnPick`, `showElement`/`hideElement` (`wf-algolia-display` aware) |
 | `src/utils/sanitize.js` | 69 | `sanitizeUrl` + `sanitizeHtml` (DOMParser tag/attr allowlist strip) |
 | `src/utils/misc.js` | 24 | `escapeFilterValue`, `getPath`, `slugify`, `restartIx2` |
@@ -31,14 +32,15 @@ and `dist/index.min.js`.
 | `src/utils/base-filter.js` | 36 | `wf-algolia-base-filter`/`-filter` attribute parser (`field:value` forms) |
 | `src/insights/insights.js` | 174 | search-insights wiring: `initInsights`, delegated click/conversion listeners, `trackView`/`trackClick`/`trackConversion` |
 | `src/filters/hierarchy.js` | 171 | `wf-algolia-refines` hierarchy/cascade registry, ancestor/descendant walks, `when-parent-empty` behaviors |
-| `src/filters/filter-group.js` | 547 | `initFilterGroups` (checkbox/radio/numeric-min, deferred apply), Webflow input visuals, active-label classes, `syncFacetCounts`, `initSelectFilters` |
-| `src/filters/show-more.js` | 37 | `wf-algolia-limit` overflow toggle with text-more/less |
-| `src/filters/dynamic-filters.js` | 167 | Facet-value fetch + dynamic `wf-algolia-facet` group population, facet-count sync |
-| `src/filters/filter-search.js` | 305 | SFFV typeahead (in-group + overlay) and local substring filter search |
+| `src/filters/filter-group.js` | 565 | `initFilterGroups` (checkbox/radio/numeric-min, deferred apply), Webflow input visuals, active-label classes, `syncFacetCounts`, `initSelectFilters` |
+| `src/filters/show-more.js` | 41 | `wf-algolia-limit` overflow toggle with text-more/less (selected items never fold in `selected-first` groups) |
+| `src/filters/filter-sort.js` | 112 | `wf-algolia-sort` item ordering (`selected-first`/`alpha`/`count`), load-time baseline order, FLIP hookup |
+| `src/filters/dynamic-filters.js` | 169 | Facet-value fetch + dynamic `wf-algolia-facet` group population, facet-count sync |
+| `src/filters/filter-search.js` | 313 | SFFV typeahead (in-group + overlay) and local substring filter search |
 | `src/filters/filter-tags.js` | 143 | Active-filter chips (value + range), `wf-algolia-replace-field` display names |
 | `src/filters/range.js` | 81 | Range min/max inputs (Finsweet rangeslider compatible), bounds registry |
 | `src/filters/standalone-filter-groups.js` | 371 | Filter-groups outside browse → navigation links, nested child re-scope, parent-change events |
-| `src/actions/filter-actions.js` | 344 | `syncFilterDOM`, selected-count/value renderers, `clearAllFilters`/`setFilter`/`setQuery`, staging commit/discard wrappers |
+| `src/actions/filter-actions.js` | 309 | `syncFilterDOM`, selected-count/value renderers, `clearAllFilters`/`setFilter`/`setQuery`, staging commit/discard wrappers |
 | `src/render/populate.js` | 134 | `populateCard`: text/html/snippet/image/link/if binders (highlight inlined) |
 | `src/render/template.js` | 82 | `cloneAndPopulate`, `removeInjected`, template detach, `renderHits` (+IX2 restart, view tracking) |
 | `src/render/detail.js` | 95 | Detail-mode rendering (objectID from attr/path/query, slug lookup, array-item expansion) |
@@ -62,7 +64,7 @@ and `dist/index.min.js`.
 
 Leaf modules (no local imports): `core/events`, `core/attributes`, `core/accessibility`,
 `vendor/finsweet`, `utils/dom`, `utils/sanitize`, `utils/debounce`, `utils/snippet`,
-`utils/base-filter`, `filters/show-more`, `browse/url-sync`, `pagination/infinite-scroll`,
+`utils/base-filter`, `utils/flip`, `browse/url-sync`, `pagination/infinite-scroll`,
 `debug/rules`.
 
 ```txt
@@ -77,18 +79,20 @@ insights/insights    → npm:search-insights
 utils/misc           → vendor/finsweet
 utils/format         → utils/misc
 filters/hierarchy    → core/events
+filters/filter-sort  → utils/flip
+filters/show-more    → filters/filter-sort
 filters/filter-group → core/events, vendor/finsweet, utils/{dom,format}, core/filter-state,
-                       filters/hierarchy, actions/filter-actions            ← cycle A
+                       filters/{hierarchy,filter-sort,show-more}, actions/filter-actions  ← cycle A
 actions/filter-actions → core/events, utils/format, core/filter-state, filters/{hierarchy,
-                       filter-group, show-more}                             ← cycle A
+                       filter-group, show-more, filter-sort}                ← cycle A
 render/populate      → utils/{dom,sanitize,misc,format}
 render/template      → utils/{sanitize,misc,format}, insights/insights, render/populate
 render/detail        → utils/{dom,misc}, render/{populate,template}
 api/public-api       → core/{events,filter-state}, insights/insights, actions/filter-actions,
                        render/{populate,template}
-filters/dynamic-filters → utils/format, core/filter-state, filters/{hierarchy,show-more},
+filters/dynamic-filters → utils/format, core/filter-state, filters/{hierarchy,show-more,filter-sort},
                        render/template, core/attributes
-filters/filter-search → utils/{format,debounce}, core/filter-state, filters/show-more,
+filters/filter-search → utils/{format,debounce}, core/filter-state, filters/{show-more,filter-sort},
                        render/template, core/attributes
 filters/filter-tags  → utils/format, core/filter-state, filters/{hierarchy,filter-group},
                        actions/filter-actions, render/template, core/attributes

@@ -61,7 +61,30 @@ Injected clones get class `wf-algolia-injected` and `data-wf-algolia-hit-objecti
 | `wf-algolia-element="filter-tag-wrapper/-template/-text/-remove"` | Active-filter chips |
 | `wf-algolia-text-template="{field}: {value}"` | Chip/count label template (`{value}`, `{field}`, `{min}`, `{max}`, `{count}`) |
 | `wf-algolia-label="leaf"` | Hierarchical values: render only deepest segment (facet lists AND chips — 1.0.4) |
+| `wf-algolia-sort` | On `filter-group`: item order — `natural` (default, DOM order) / `selected-first` / `alpha` / `count` |
+| `wf-algolia-limit="N"` + `wf-algolia-element="filter-show-more"` | Collapse the list to N items behind a Show more toggle |
 | `wf-algolia-replace-field='{"categories.lvl0":"Categories"}'` | On `filter-tag-wrapper`: relabel `{field}` token (1.0.4) |
+
+### `wf-algolia-sort="selected-first"` (1.0.8)
+
+Ticked items pin to the top of their group; everything else keeps its load-time
+order. Applies to checkbox, radio and div/button item markup — not to native
+`<select>` groups (`wf-algolia-type="select"` / `select-multiple`).
+
+- **Pins on click**, not when the query returns — including staged clicks in
+  `wf-algolia-apply-mode="deferred"` groups (Cancel drops them back).
+- **Ticked-first, stable**: the pinned block keeps the list's own relative order,
+  never click order; the unticked remainder never re-sorts (no live-count churn).
+  Unticking drops an item straight back into its original slot.
+- **Re-applied after every list change**: init/URL restore, dynamic facet
+  injection, filter-search (SFFV) re-injection, hierarchy child refresh,
+  reset/clear-all, staging cancel, filter-tag removal.
+- **Show more**: with `wf-algolia-limit="N"`, selected items never fold away and
+  count toward N (visible = all selected + unselected up to N total). Groups
+  without `selected-first` keep the plain first-N-in-DOM-order behavior.
+- **Animated** (~200ms FLIP) when the reorder comes from a click in that group;
+  instant everywhere else. Skipped under `prefers-reduced-motion` or in a
+  background tab.
 
 ## Pagination & sort
 

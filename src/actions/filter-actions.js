@@ -5,6 +5,7 @@ import { FILTER_STATE, clearState, commitStaging, discardStaging, getEffectiveSt
 import { applyParentEmptyBehavior, getAllChildLinks } from "../filters/hierarchy.js";
 import { applyActiveLabelClasses, syncWebflowInputVisual } from "../filters/filter-group.js";
 import { reapplyShowMore } from "../filters/show-more.js";
+import { applyFilterItemSort } from "../filters/filter-sort.js";
 export function syncFilterDOM(e = FILTER_STATE) {
   (document.querySelectorAll("[data-wf-algolia-staged]").forEach((t) => {
     t.removeAttribute("data-wf-algolia-staged");
@@ -74,7 +75,7 @@ export function syncFilterDOM(e = FILTER_STATE) {
             (i = s.closest("label")));
         }
         (applyActiveLabelClasses(t, i),
-          sortFilterItems(t, n, e),
+          applyFilterItemSort(t),
           reapplyShowMore(t));
       }),
     renderSelectedCounts(e),
@@ -121,42 +122,6 @@ function synthesizeMissingSelected(e, t, n) {
         (u.setAttribute("role", "button"), u.setAttribute("tabindex", "0")),
       c.insertBefore(u, m));
   }
-}
-function sortFilterItems(e, t, n) {
-  let r = e.getAttribute("wf-algolia-sort");
-  if (
-    !r ||
-    r === "natural" ||
-    (r !== "selected-first" && r !== "alpha" && r !== "count")
-  )
-    return;
-  let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')];
-  if (i.length < 2) return;
-  let o = i[0].parentElement;
-  if (!o) return;
-  for (let g of i) if (g.parentElement !== o) return;
-  let l = (g) => g.getAttribute("wf-algolia-value") || "",
-    s = (g) => n[t]?.values?.has(l(g)) ?? !1,
-    c = (g) => {
-      let u = g.querySelector('[wf-algolia-element="filter-count"]'),
-        h = parseInt((u?.textContent ?? "0").trim(), 10);
-      return Number.isFinite(h) ? h : 0;
-    },
-    m;
-  if (r === "selected-first") {
-    let g = [],
-      u = [];
-    for (let h of i) (s(h) ? g : u).push(h);
-    m = [...g, ...u];
-  } else
-    r === "alpha"
-      ? (m = [...i].sort((g, u) =>
-          l(g).localeCompare(l(u), void 0, {
-            sensitivity: "base",
-          }),
-        ))
-      : (m = [...i].sort((g, u) => c(u) - c(g)));
-  for (let g of m) o.appendChild(g);
 }
 var warnedCountNoField = new WeakSet();
 function resolveCountField(e) {
