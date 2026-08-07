@@ -1,12 +1,16 @@
 // elements/facet-stat — split from app.carved.js (see docs/MODULE-MAP.md)
 import { formatValue, getTextTemplate, interpolate } from "../utils/format.js";
-import { readBaseFilter } from "../utils/base-filter.js";
+import { readBaseFilter, splitFacetFilter } from "../utils/base-filter.js";
+import { HIERARCHY_SEPARATOR, matchLeafInVocabulary } from "../filters/hierarchy.js";
 import { searchWithMiddleware } from "../api/public-api.js";
 var STAT_KEYS = ["min", "max", "avg", "sum"],
   warnedStatNoField = new WeakSet(),
   warnedStatBadStat = new WeakSet(),
   warnedStatNoIndex = new WeakSet(),
-  warnedStatNoStats = new WeakSet();
+  warnedStatNoStats = new WeakSet(),
+  warnedStatBadResolve = new WeakSet(),
+  warnedStatLeafMissing = new WeakSet(),
+  warnedStatLeafAmbiguous = new WeakSet();
 function resolveStatIndex(e) {
   let t = e.getAttribute("wf-algolia-index");
   if (t) return t;
@@ -19,6 +23,42 @@ function resolveStatIndex(e) {
     document.querySelector("script[data-app-id]")?.getAttribute("data-index") ||
     ""
   );
+}
+function readResolveMode(e, t) {
+  let n = e.getAttribute("wf-algolia-base-filter-resolve");
+  if (n === null || n.trim() === "") return null;
+  let r = n.trim();
+  return r === "leaf"
+    ? "leaf"
+    : (warnedStatBadResolve.has(t) ||
+        (warnedStatBadResolve.add(t),
+        console.warn(
+          `[wf-algolia] Unknown wf-algolia-base-filter-resolve='${n}'; valid value: 'leaf'. Treating as absent.`,
+          t,
+        )),
+      null);
+}
+async function resolveLeafBaseFilter(e, t, n, r) {
+  let i = splitFacetFilter(n);
+  if (i === null || i.value.includes(HIERARCHY_SEPARATOR)) return n;
+  let o = await matchLeafInVocabulary(e, t, i.field, i.value);
+  return o.length === 1
+    ? [[`${i.field}:${o[0]}`]]
+    : o.length === 0
+      ? (warnedStatLeafMissing.has(r) ||
+          (warnedStatLeafMissing.add(r),
+          console.warn(
+            `[wf-algolia] facet-stat: leaf "${i.value}" not found in "${i.field}" vocabulary on "${t}". Leaving the authored text.`,
+            r,
+          )),
+        !1)
+      : (warnedStatLeafAmbiguous.has(r) ||
+          (warnedStatLeafAmbiguous.add(r),
+          console.error(
+            `[wf-algolia] facet-stat: leaf "${i.value}" is ambiguous in "${i.field}" on "${t}" — matches ${o.join(" | ")}. Leaving the authored text.`,
+            r,
+          )),
+        !1);
 }
 export function initFacetStats(e, t) {
   (t.get("facet-stat") ?? []).forEach((r) => void renderFacetStat(e, r));
@@ -64,17 +104,27 @@ function renderFacetStat(e, t) {
     l = readBaseFilter(o, "wf-algolia-base-filter", (c) =>
       console.warn(`[wf-algolia] facet-stat ${c}`, t),
     ),
-    s = {
-      facets: [n],
-      hitsPerPage: 0,
-      ...(l
-        ? {
-            facetFilters: l,
-          }
-        : {}),
-    };
-  return searchWithMiddleware(s, (c) => e.initIndex(i).search("", c))
+    s = readResolveMode(o, t);
+  return (
+    s === "leaf" && l !== null
+      ? resolveLeafBaseFilter(e, i, l, t)
+      : Promise.resolve(l)
+  )
     .then((c) => {
+      if (c === !1) return null;
+      let m = {
+        facets: [n],
+        hitsPerPage: 0,
+        ...(c
+          ? {
+              facetFilters: c,
+            }
+          : {}),
+      };
+      return searchWithMiddleware(m, (g) => e.initIndex(i).search("", g));
+    })
+    .then((c) => {
+      if (c === null) return;
       let g = c.facets_stats?.[n]?.[r];
       if (g == null) {
         warnedStatNoStats.has(t) ||

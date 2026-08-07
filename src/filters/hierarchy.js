@@ -12,6 +12,33 @@ export function getLabelMode(e) {
 export function formatFacetLabel(e, t) {
   return t === "leaf" ? leafValue(e) : e;
 }
+var vocabByIndexField = new Map();
+export function fetchFacetVocabulary(e, t, n) {
+  let r = `${t}\0${n}`,
+    i = vocabByIndexField.get(r);
+  return (
+    i ||
+      ((i = e
+        .initIndex(t)
+        .search("", {
+          facets: [n],
+          hitsPerPage: 0,
+          maxValuesPerFacet: 1000,
+        })
+        .then((o) => Object.keys(o.facets?.[n] ?? {}))
+        .catch((o) => {
+          throw (vocabByIndexField.delete(r), o);
+        })),
+      vocabByIndexField.set(r, i)),
+    i
+  );
+}
+export async function matchLeafInVocabulary(e, t, n, r) {
+  let i = r.trim().toLowerCase();
+  return (await fetchFacetVocabulary(e, t, n)).filter(
+    (o) => leafValue(o).trim().toLowerCase() === i,
+  );
+}
 var groupFieldById = new Map(),
   groupElById = new Map(),
   childLinksByParentId = new Map(),

@@ -13,6 +13,17 @@ function pairToFacetFilter(e, t) {
     r = t?.trim() ?? "";
   return !n || !r ? null : [[`${n}:${r}`]];
 }
+export function splitFacetFilter(e) {
+  let t = e?.length === 1 && e[0]?.length === 1 ? e[0][0] : null;
+  if (typeof t != "string") return null;
+  let n = t.indexOf(":");
+  return n <= 0 || n >= t.length - 1
+    ? null
+    : {
+        field: t.slice(0, n),
+        value: t.slice(n + 1),
+      };
+}
 export function readBaseFilter(e, t, n) {
   let r = e.getAttribute(`${t}-value`);
   if (r !== null && r.trim() !== "") {
