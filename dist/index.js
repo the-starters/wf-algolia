@@ -2422,6 +2422,7 @@
   // src/filters/hierarchy.js
   var MAX_DEPTH = 5;
   var HIERARCHY_SEPARATOR = " > ";
+  var MAX_FACET_VALUES = 1e3;
   function leafValue(e) {
     let t = e.lastIndexOf(HIERARCHY_SEPARATOR);
     return t === -1 ? e : e.slice(t + HIERARCHY_SEPARATOR.length);
@@ -2433,13 +2434,19 @@
     return t === "leaf" ? leafValue(e) : e;
   }
   var vocabByIndexField = /* @__PURE__ */ new Map();
+  var warnedVocabTruncated = /* @__PURE__ */ new Set();
   function fetchFacetVocabulary(e, t, n) {
     let r = `${t}\0${n}`, i = vocabByIndexField.get(r);
     return i || (i = e.initIndex(t).search("", {
       facets: [n],
       hitsPerPage: 0,
-      maxValuesPerFacet: 1e3
-    }).then((o) => Object.keys(o.facets?.[n] ?? {})).catch((o) => {
+      maxValuesPerFacet: MAX_FACET_VALUES
+    }).then((o) => {
+      let l = Object.keys(o.facets?.[n] ?? {});
+      return l.length >= MAX_FACET_VALUES && !warnedVocabTruncated.has(r) && (warnedVocabTruncated.add(r), console.warn(
+        `[wf-algolia] Facet vocabulary for "${n}" on "${t}" hit the maxValuesPerFacet=${MAX_FACET_VALUES} ceiling; it may be truncated and leaf resolution may miss values.`
+      )), l;
+    }).catch((o) => {
       throw vocabByIndexField.delete(r), o;
     }), vocabByIndexField.set(r, i)), i;
   }
@@ -5377,7 +5384,7 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
   }
   function readResolveMode(e, t) {
     let n = e.getAttribute("wf-algolia-base-filter-resolve");
-    if (n === null || n.trim() === "") return null;
+    if (n === null) return null;
     let r = n.trim();
     return r === "leaf" ? "leaf" : (warnedStatBadResolve.has(t) || (warnedStatBadResolve.add(t), console.warn(
       `[wf-algolia] Unknown wf-algolia-base-filter-resolve='${n}'; valid value: 'leaf'. Treating as absent.`,

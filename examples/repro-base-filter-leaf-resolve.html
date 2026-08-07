@@ -187,6 +187,25 @@
         </div>
         <span class="expect">Expect: $35</span>
       </div>
+
+      <!-- CASE 8: attribute present but empty — still an unknown mode, must warn -->
+      <div class="case">
+        <h2>8. Empty resolve value</h2>
+        <code>base-filter-resolve="" (present but empty)</code>
+        <div
+          id="case-8"
+          wf-algolia-element="facet-stat"
+          wf-algolia-field="rate"
+          wf-algolia-stat="min"
+          wf-algolia-base-filter-field="categories.lvl1"
+          wf-algolia-base-filter-value="Growth Marketing"
+          wf-algolia-base-filter-resolve=""
+          class="stat"
+        >
+          $0
+        </div>
+        <span class="expect">Expect: $0 + "Unknown wf-algolia-base-filter-resolve" warning (not silent), then behaves like case 2</span>
+      </div>
     </div>
 
     <!--
@@ -238,7 +257,7 @@
     </script>
 
     <script
-      src="./dist/index.js"
+      src="../dist/index.js"
       data-app-id="PKVW6M9OPZ"
       data-search-key="296cba989b67e9a61f8edf6592c3870e"
       data-index="Freelancers3.0-dev"

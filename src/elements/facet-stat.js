@@ -26,7 +26,7 @@ function resolveStatIndex(e) {
 }
 function readResolveMode(e, t) {
   let n = e.getAttribute("wf-algolia-base-filter-resolve");
-  if (n === null || n.trim() === "") return null;
+  if (n === null) return null;
   let r = n.trim();
   return r === "leaf"
     ? "leaf"
