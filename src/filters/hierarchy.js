@@ -1,7 +1,8 @@
 // filters/hierarchy — split from app.carved.js (see docs/MODULE-MAP.md)
 import { emit } from "../core/events.js";
 export var MAX_DEPTH = 5,
-  HIERARCHY_SEPARATOR = " > ";
+  HIERARCHY_SEPARATOR = " > ",
+  MAX_FACET_VALUES = 1000;
 export function leafValue(e) {
   let t = e.lastIndexOf(HIERARCHY_SEPARATOR);
   return t === -1 ? e : e.slice(t + HIERARCHY_SEPARATOR.length);
@@ -11,6 +12,45 @@ export function getLabelMode(e) {
 }
 export function formatFacetLabel(e, t) {
   return t === "leaf" ? leafValue(e) : e;
+}
+var vocabByIndexField = new Map(),
+  warnedVocabTruncated = new Set();
+export function fetchFacetVocabulary(e, t, n) {
+  let r = `${t}\0${n}`,
+    i = vocabByIndexField.get(r);
+  return (
+    i ||
+      ((i = e
+        .initIndex(t)
+        .search("", {
+          facets: [n],
+          hitsPerPage: 0,
+          maxValuesPerFacet: MAX_FACET_VALUES,
+        })
+        .then((o) => {
+          let l = Object.keys(o.facets?.[n] ?? {});
+          return (
+            l.length >= MAX_FACET_VALUES &&
+              !warnedVocabTruncated.has(r) &&
+              (warnedVocabTruncated.add(r),
+              console.warn(
+                `[wf-algolia] Facet vocabulary for "${n}" on "${t}" hit the maxValuesPerFacet=${MAX_FACET_VALUES} ceiling; it may be truncated and leaf resolution may miss values.`,
+              )),
+            l
+          );
+        })
+        .catch((o) => {
+          throw (vocabByIndexField.delete(r), o);
+        })),
+      vocabByIndexField.set(r, i)),
+    i
+  );
+}
+export async function matchLeafInVocabulary(e, t, n, r) {
+  let i = r.trim().toLowerCase();
+  return (await fetchFacetVocabulary(e, t, n)).filter(
+    (o) => leafValue(o).trim().toLowerCase() === i,
+  );
 }
 var groupFieldById = new Map(),
   groupElById = new Map(),

@@ -2422,6 +2422,7 @@
   // src/filters/hierarchy.js
   var MAX_DEPTH = 5;
   var HIERARCHY_SEPARATOR = " > ";
+  var MAX_FACET_VALUES = 1e3;
   function leafValue(e) {
     let t = e.lastIndexOf(HIERARCHY_SEPARATOR);
     return t === -1 ? e : e.slice(t + HIERARCHY_SEPARATOR.length);
@@ -2431,6 +2432,29 @@
   }
   function formatFacetLabel(e, t) {
     return t === "leaf" ? leafValue(e) : e;
+  }
+  var vocabByIndexField = /* @__PURE__ */ new Map();
+  var warnedVocabTruncated = /* @__PURE__ */ new Set();
+  function fetchFacetVocabulary(e, t, n) {
+    let r = `${t}\0${n}`, i = vocabByIndexField.get(r);
+    return i || (i = e.initIndex(t).search("", {
+      facets: [n],
+      hitsPerPage: 0,
+      maxValuesPerFacet: MAX_FACET_VALUES
+    }).then((o) => {
+      let l = Object.keys(o.facets?.[n] ?? {});
+      return l.length >= MAX_FACET_VALUES && !warnedVocabTruncated.has(r) && (warnedVocabTruncated.add(r), console.warn(
+        `[wf-algolia] Facet vocabulary for "${n}" on "${t}" hit the maxValuesPerFacet=${MAX_FACET_VALUES} ceiling; it may be truncated and leaf resolution may miss values.`
+      )), l;
+    }).catch((o) => {
+      throw vocabByIndexField.delete(r), o;
+    }), vocabByIndexField.set(r, i)), i;
+  }
+  async function matchLeafInVocabulary(e, t, n, r) {
+    let i = r.trim().toLowerCase();
+    return (await fetchFacetVocabulary(e, t, n)).filter(
+      (o) => leafValue(o).trim().toLowerCase() === i
+    );
   }
   var groupFieldById = /* @__PURE__ */ new Map();
   var groupElById = /* @__PURE__ */ new Map();
@@ -3561,6 +3585,15 @@
   function pairToFacetFilter(e, t) {
     let n = e?.trim() ?? "", r = t?.trim() ?? "";
     return !n || !r ? null : [[`${n}:${r}`]];
+  }
+  function splitFacetFilter(e) {
+    let t = e?.length === 1 && e[0]?.length === 1 ? e[0][0] : null;
+    if (typeof t != "string") return null;
+    let n = t.indexOf(":");
+    return n <= 0 || n >= t.length - 1 ? null : {
+      field: t.slice(0, n),
+      value: t.slice(n + 1)
+    };
   }
   function readBaseFilter(e, t, n) {
     let r = e.getAttribute(`${t}-value`);
@@ -5336,6 +5369,9 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
   var warnedStatBadStat = /* @__PURE__ */ new WeakSet();
   var warnedStatNoIndex = /* @__PURE__ */ new WeakSet();
   var warnedStatNoStats = /* @__PURE__ */ new WeakSet();
+  var warnedStatBadResolve = /* @__PURE__ */ new WeakSet();
+  var warnedStatLeafMissing = /* @__PURE__ */ new WeakSet();
+  var warnedStatLeafAmbiguous = /* @__PURE__ */ new WeakSet();
   function resolveStatIndex(e) {
     let t = e.getAttribute("wf-algolia-index");
     if (t) return t;
@@ -5345,6 +5381,27 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       if (i) return i;
     }
     return document.querySelector("script[data-app-id]")?.getAttribute("data-index") || "";
+  }
+  function readResolveMode(e, t) {
+    let n = e.getAttribute("wf-algolia-base-filter-resolve");
+    if (n === null) return null;
+    let r = n.trim();
+    return r === "leaf" ? "leaf" : (warnedStatBadResolve.has(t) || (warnedStatBadResolve.add(t), console.warn(
+      `[wf-algolia] Unknown wf-algolia-base-filter-resolve='${n}'; valid value: 'leaf'. Treating as absent.`,
+      t
+    )), null);
+  }
+  async function resolveLeafBaseFilter(e, t, n, r) {
+    let i = splitFacetFilter(n);
+    if (i === null || i.value.includes(HIERARCHY_SEPARATOR)) return n;
+    let o = await matchLeafInVocabulary(e, t, i.field, i.value);
+    return o.length === 1 ? [[`${i.field}:${o[0]}`]] : o.length === 0 ? (warnedStatLeafMissing.has(r) || (warnedStatLeafMissing.add(r), console.warn(
+      `[wf-algolia] facet-stat: leaf "${i.value}" not found in "${i.field}" vocabulary on "${t}". Leaving the authored text.`,
+      r
+    )), false) : (warnedStatLeafAmbiguous.has(r) || (warnedStatLeafAmbiguous.add(r), console.error(
+      `[wf-algolia] facet-stat: leaf "${i.value}" is ambiguous in "${i.field}" on "${t}" \u2014 matches ${o.join(" | ")}. Leaving the authored text.`,
+      r
+    )), false);
   }
   function initFacetStats(e, t) {
     (t.get("facet-stat") ?? []).forEach((r) => void renderFacetStat(e, r));
@@ -5374,14 +5431,19 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       o,
       "wf-algolia-base-filter",
       (c) => console.warn(`[wf-algolia] facet-stat ${c}`, t)
-    ), s = {
-      facets: [n],
-      hitsPerPage: 0,
-      ...l ? {
-        facetFilters: l
-      } : {}
-    };
-    return searchWithMiddleware(s, (c) => e.initIndex(i).search("", c)).then((c) => {
+    ), s = readResolveMode(o, t);
+    return (s === "leaf" && l !== null ? resolveLeafBaseFilter(e, i, l, t) : Promise.resolve(l)).then((c) => {
+      if (c === false) return null;
+      let m = {
+        facets: [n],
+        hitsPerPage: 0,
+        ...c ? {
+          facetFilters: c
+        } : {}
+      };
+      return searchWithMiddleware(m, (g) => e.initIndex(i).search("", g));
+    }).then((c) => {
+      if (c === null) return;
       let g = c.facets_stats?.[n]?.[r];
       if (g == null) {
         warnedStatNoStats.has(t) || (warnedStatNoStats.add(t), console.warn(

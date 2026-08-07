@@ -29,9 +29,9 @@ and `dist/index.min.js`.
 | `src/utils/format.js` | 87 | `{token}` interpolation, text-template caches, `wf-algolia-if` conditions, value formatters |
 | `src/utils/debounce.js` | 7 | Trailing debounce |
 | `src/utils/snippet.js` | 4 | `buildSnippetParam` (`attributesToSnippet` builder) |
-| `src/utils/base-filter.js` | 36 | `wf-algolia-base-filter`/`-filter` attribute parser (`field:value` forms) |
+| `src/utils/base-filter.js` | 47 | `wf-algolia-base-filter`/`-filter` attribute parser (`field:value` forms), facet-filter pair splitter |
 | `src/insights/insights.js` | 174 | search-insights wiring: `initInsights`, delegated click/conversion listeners, `trackView`/`trackClick`/`trackConversion` |
-| `src/filters/hierarchy.js` | 171 | `wf-algolia-refines` hierarchy/cascade registry, ancestor/descendant walks, `when-parent-empty` behaviors |
+| `src/filters/hierarchy.js` | 211 | `wf-algolia-refines` hierarchy/cascade registry, ancestor/descendant walks, `when-parent-empty` behaviors, cached facet-vocabulary fetch + leaf lookup |
 | `src/filters/filter-group.js` | 565 | `initFilterGroups` (checkbox/radio/numeric-min, deferred apply), Webflow input visuals, active-label classes, `syncFacetCounts`, `initSelectFilters` |
 | `src/filters/show-more.js` | 41 | `wf-algolia-limit` overflow toggle with text-more/less (selected items never fold in `selected-first` groups) |
 | `src/filters/filter-sort.js` | 112 | `wf-algolia-sort` item ordering (`selected-first`/`alpha`/`count`), load-time baseline order, FLIP hookup |
@@ -54,7 +54,7 @@ and `dist/index.min.js`.
 | `src/search/search.js` | 72 | Scoped single-index search-input |
 | `src/search/multi-search.js` | 154 | Merged (comma-separated index) and sectioned federated search |
 | `src/search/autocomplete.js` | 148 | Sectioned dropdown autocomplete with keyboard nav |
-| `src/elements/facet-stat.js` | 98 | `facet-stat` element (`facets_stats` min/max/avg/sum) |
+| `src/elements/facet-stat.js` | 148 | `facet-stat` element (`facets_stats` min/max/avg/sum) |
 | `src/elements/hit-preview.js` | 411 | Eager batched hit previews (multipleQueries), click trap, re-scope refresh |
 | `src/recommend/recommend.js` | 94 | @algolia/recommend: 4 models rendered via `renderHits` |
 | `src/debug/rules.js` | 570 | 26 attribute-lint rule factories + `ALL_RULES` (21 rule ids) |
@@ -110,7 +110,7 @@ browse/static-list   → utils/{dom,snippet,base-filter}, render/template, api/p
 search/search        → utils/{dom,format,debounce,snippet}, render/template, api/public-api, core/attributes
 search/multi-search  → utils/{dom,format,debounce,snippet}, render/template, api/public-api, core/attributes
 search/autocomplete  → utils/{dom,debounce}, render/template, api/public-api, core/attributes
-elements/facet-stat  → utils/{format,base-filter}, api/public-api
+elements/facet-stat  → utils/{format,base-filter}, filters/hierarchy, api/public-api
 elements/hit-preview → core/attributes
 recommend/recommend  → utils/dom, render/template, core/attributes, npm:@algolia/recommend
 debug/audit          → debug/rules
