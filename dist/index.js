@@ -2255,11 +2255,19 @@
   function hideElement(e) {
     e && (e.style.display = "none");
   }
+  var DISABLED_CONTROL_ATTR = "data-wf-algolia-disabled-control";
+  function eachNativeControl(e, t) {
+    "disabled" in e && t(e), e.querySelectorAll("input, select, button, textarea").forEach(t);
+  }
   function disableFilterEl(e, t = "is-disabled") {
-    e.classList.add(t), e.setAttribute("data-wf-algolia-disabled", "true"), e.setAttribute("aria-disabled", "true"), e.style.pointerEvents = "none";
+    e.classList.add(t), e.setAttribute("data-wf-algolia-disabled", "true"), e.setAttribute("aria-disabled", "true"), e.style.pointerEvents = "none", eachNativeControl(e, (n) => {
+      n.disabled || (n.disabled = true, n.setAttribute(DISABLED_CONTROL_ATTR, "true"));
+    });
   }
   function enableFilterEl(e, t = "is-disabled") {
-    e.classList.remove(t), e.removeAttribute("data-wf-algolia-disabled"), e.removeAttribute("aria-disabled"), e.style.removeProperty("pointer-events");
+    e.classList.remove(t), e.removeAttribute("data-wf-algolia-disabled"), e.removeAttribute("aria-disabled"), e.style.removeProperty("pointer-events"), eachNativeControl(e, (n) => {
+      n.hasAttribute(DISABLED_CONTROL_ATTR) && (n.removeAttribute(DISABLED_CONTROL_ATTR), n.disabled = false);
+    });
   }
 
   // src/utils/misc.js
@@ -2775,7 +2783,7 @@
     let c = i[0]?.parentElement ?? s.parentElement ?? e, m = c.firstChild;
     for (let g of l) {
       let u = s.cloneNode(true);
-      u.removeAttribute("wf-algolia-element"), u.setAttribute("wf-algolia-element", "filter-item"), u.setAttribute("wf-algolia-value", g), u.setAttribute("data-wf-algolia-synthesized", "true"), u.style.display === "none" && (u.style.display = ""), u.querySelectorAll("*").forEach((b) => {
+      enableFilterEl(u, e.getAttribute("wf-algolia-zeroclass") || "is-disabled"), u.removeAttribute("wf-algolia-element"), u.setAttribute("wf-algolia-element", "filter-item"), u.setAttribute("wf-algolia-value", g), u.setAttribute("data-wf-algolia-synthesized", "true"), u.style.display === "none" && (u.style.display = ""), u.querySelectorAll("*").forEach((b) => {
         b.style.display === "none" && (b.style.display = "");
       });
       let h = u.querySelector('[wf-algolia-element="filter-value-text"]') || u.querySelector(".wf-fi-name");
@@ -3917,7 +3925,8 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
     let r = e.querySelector('[wf-algolia-element="filter-search-results"]'), i = typeof CSS < "u" && CSS.escape ? CSS.escape(t) : t, o = Array.from(
       e.querySelectorAll('[wf-algolia-element="filter-item"]')
     ).filter((b) => !r || !r.contains(b)), l = o.find((b) => b.getAttribute("wf-algolia-value") === t);
-    if (l) return l;
+    if (l)
+      return enableFilterEl(l, e.getAttribute("wf-algolia-zeroclass") || "is-disabled"), l;
     let m = (e.querySelector('[wf-algolia-element="filter-template"]') ?? o[0] ?? n).cloneNode(true);
     m.removeAttribute("wf-algolia-element"), m.setAttribute("wf-algolia-element", "filter-item"), m.setAttribute("wf-algolia-value", t), m.setAttribute("data-wf-algolia-synthesized", "true"), m.removeAttribute("data-wf-algolia-active"), m.removeAttribute("data-wf-algolia-overlay-result");
     let g = e.getAttribute("wf-algolia-activeclass") || "is-active";

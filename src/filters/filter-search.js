@@ -276,7 +276,11 @@ function ensureFilterItem(e, t, n) {
       e.querySelectorAll('[wf-algolia-element="filter-item"]'),
     ).filter((b) => !r || !r.contains(b)),
     l = o.find((b) => b.getAttribute("wf-algolia-value") === t);
-  if (l) return l;
+  if (l)
+    return (
+      enableFilterEl(l, e.getAttribute("wf-algolia-zeroclass") || "is-disabled"),
+      l
+    );
   let m = (
     e.querySelector('[wf-algolia-element="filter-template"]') ??
     o[0] ??

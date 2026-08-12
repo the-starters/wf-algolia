@@ -153,8 +153,8 @@ Format: `minified` → `proposedName` — purpose.
 | `un` | `getAllChildLinks` | Copy of `allChildLinks` |
 | `hs` | `hideEl` | Add hide class + `display:none !important` |
 | `ws` | `unhideEl` | Reverse of `hideEl` |
-| `ys` | `disableEl` | Add disabled class + aria-disabled + pointer-events:none |
-| `bs` | `enableEl` | Reverse of `disableEl` |
+| `ys` | `disableEl` | Local alias for `disableFilterEl` from `utils/dom` (§2.13) |
+| `bs` | `enableEl` | Local alias for `enableFilterEl` from `utils/dom` (§2.13) |
 | `Fe` | `applyParentEmptyBehavior` | Dispatch hide/disable per mode |
 | `Tt` | `clearParentEmptyBehavior` | Dispatch unhide/enable per mode |
 | `vs` | `collectAncestors` | Walk parent chain (cycle + MAX_DEPTH guards, emits `error`) |
@@ -253,6 +253,8 @@ Format: `minified` → `proposedName` — purpose.
 | `Ai` | `warnedDisplayBlock` | Warn-once set for missing `wf-algolia-display` |
 | `J` | `showElement` | Show w/ `wf-algolia-display` attr, explicit display arg, or `block` + warn |
 | `B` | `hideElement` | `display:none` |
+| — | `disableFilterEl` | Add the group's zeroclass + `data-wf-algolia-disabled` + aria-disabled + pointer-events:none, and disable native controls inside (marked with `data-wf-algolia-disabled-control`) |
+| — | `enableFilterEl` | Reverse of `disableFilterEl`; only re-enables controls carrying the marker |
 
 ### 2.14 utils/sanitize.ts (1259–1322)
 

@@ -23,7 +23,7 @@ and `dist/index.min.js`.
 | `src/core/config.js` | 52 | `initClient` (algoliasearch singleton) + `initConfig` (script-tag `data-*` parsing) |
 | `src/vendor/finsweet.js` | 58 | Vendored `@finsweet/ts-utils` remnants: `WEBFLOW_CSS`, `getSiteId`, `restartWebflow` |
 | `src/utils/flip.js` | 63 | FLIP reorder transition helper (`canAnimateReorder`, `captureRects`, `playFlip`) |
-| `src/utils/dom.js` | 41 | `closeDropdownOnPick`, `showElement`/`hideElement` (`wf-algolia-display` aware) |
+| `src/utils/dom.js` | 72 | `closeDropdownOnPick`, `showElement`/`hideElement` (`wf-algolia-display` aware), `disableFilterEl`/`enableFilterEl` (shared truly-disabled filter state) |
 | `src/utils/sanitize.js` | 69 | `sanitizeUrl` + `sanitizeHtml` (DOMParser tag/attr allowlist strip) |
 | `src/utils/misc.js` | 24 | `escapeFilterValue`, `getPath`, `slugify`, `restartIx2` |
 | `src/utils/format.js` | 87 | `{token}` interpolation, text-template caches, `wf-algolia-if` conditions, value formatters |

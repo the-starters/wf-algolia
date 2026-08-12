@@ -1,5 +1,6 @@
 // actions/filter-actions — split from app.carved.js (see docs/MODULE-MAP.md)
 import { emit } from "../core/events.js";
+import { enableFilterEl } from "../utils/dom.js";
 import { getOriginalText, getTextTemplate, interpolate } from "../utils/format.js";
 import { FILTER_STATE, clearState, commitStaging, discardStaging, getEffectiveState } from "../core/filter-state.js";
 import { applyParentEmptyBehavior, getAllChildLinks } from "../filters/hierarchy.js";
@@ -104,7 +105,8 @@ function synthesizeMissingSelected(e, t, n) {
     m = c.firstChild;
   for (let g of l) {
     let u = s.cloneNode(!0);
-    (u.removeAttribute("wf-algolia-element"),
+    (enableFilterEl(u, e.getAttribute("wf-algolia-zeroclass") || "is-disabled"),
+      u.removeAttribute("wf-algolia-element"),
       u.setAttribute("wf-algolia-element", "filter-item"),
       u.setAttribute("wf-algolia-value", g),
       u.setAttribute("data-wf-algolia-synthesized", "true"),
