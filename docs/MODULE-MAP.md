@@ -343,9 +343,9 @@ Format: `minified` → `proposedName` — purpose.
 | `_i` | `initDynamicFilters` | Populate every browse-scoped `[wf-algolia-facet]` group, then refresh |
 | `Wi` | `populateDynamicGroup` | Render facet values into one group from its filter-template (+field-label, group-count) |
 | `tr` | `refreshChildGroup` | Re-populate a hierarchy child scoped by ancestor `{field:value}` facetFilters |
-| `nr` | `syncDynamicFacetCounts` | Update counts + zeroclass on `wf-algolia-facet` groups after a query |
+| `nr` | `syncDynamicFacetCounts` | Update counts + disabled state (via `disableFilterEl`/`enableFilterEl`, §2.13) on `wf-algolia-facet` groups after a query; a value absent from a facet map already at `MAX_FACET_VALUES` is "unknown", not 0 — keep the last count and re-enable |
 | `rr` | `toggleGroupsByFacetPresence` | Hide field-groups whose facet has no values and no active selection |
-| `ir` (1929) | `syncFacetCounts` | Update counts + zeroclass + group-count on field/facet groups (static variant) |
+| `ir` (1929) | `syncFacetCounts` | Same counts + disabled state + truncation guard as `syncDynamicFacetCounts`, plus group-count, on field/facet groups (static variant) |
 
 ### 2.23 utils — base-filter parser (1894–1928)
 
