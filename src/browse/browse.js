@@ -6,7 +6,7 @@ import { buildSnippetParam } from "../utils/snippet.js";
 import { readBaseFilter } from "../utils/base-filter.js";
 import { FILTER_STATE, STAGING_STATE, commitStaging, discardStaging, stateToAlgoliaFilters, stateToAlgoliaFiltersExcluding } from "../core/filter-state.js";
 import { setIndexNameResolver } from "../insights/insights.js";
-import { applyParentEmptyBehavior, clearParentEmptyBehavior, collectDescendants, getAllChildLinks, getAncestorSelections, syncHierarchyVisibility } from "../filters/hierarchy.js";
+import { MAX_FACET_VALUES, applyParentEmptyBehavior, clearParentEmptyBehavior, collectDescendants, getAllChildLinks, getAncestorSelections, syncHierarchyVisibility } from "../filters/hierarchy.js";
 import { initFilterGroups, syncFacetCounts } from "../filters/filter-group.js";
 import { initShowMore } from "../filters/show-more.js";
 import { clearAllFilters, renderSelectedCounts, renderSelectedValues, syncFilterDOM } from "../actions/filter-actions.js";
@@ -335,6 +335,7 @@ function disjunctiveParams(e, t, n) {
     hitsPerPage: 0,
     page: 0,
     facets: [e],
+    maxValuesPerFacet: MAX_FACET_VALUES,
     facetFilters: t,
     numericFilters: n,
     analytics: !1,
@@ -385,6 +386,7 @@ function runSingleIndexQuery(e, t, n, r, i) {
       hitsPerPage: browseState.hitsPerPage,
       page: browseState.page,
       facets: ["*"],
+      maxValuesPerFacet: MAX_FACET_VALUES,
       facetFilters: c,
       numericFilters: l,
       clickAnalytics: !0,
@@ -467,6 +469,7 @@ function runFederatedQuery(e, t, n, r, i) {
         hitsPerPage: l,
         page: browseState.page,
         facets: ["*"],
+        maxValuesPerFacet: MAX_FACET_VALUES,
         facetFilters: withBaseFilters(g),
         numericFilters: u,
         clickAnalytics: !0,

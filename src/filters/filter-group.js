@@ -1,10 +1,10 @@
 // filters/filter-group — split from app.carved.js (see docs/MODULE-MAP.md)
 import { emit } from "../core/events.js";
 import { WEBFLOW_CSS } from "../vendor/finsweet.js";
-import { closeDropdownOnPick } from "../utils/dom.js";
+import { closeDropdownOnPick, disableFilterEl, enableFilterEl } from "../utils/dom.js";
 import { getTextTemplate, interpolate } from "../utils/format.js";
 import { FILTER_STATE, STAGING_STATE, stageFilter, toggleStateValue } from "../core/filter-state.js";
-import { MAX_DEPTH, applyParentEmptyBehavior, getChildLink, getGroupField, isParentGroup, parseWhenParentEmpty, registerChildLink, registerGroup } from "./hierarchy.js";
+import { MAX_DEPTH, MAX_FACET_VALUES, applyParentEmptyBehavior, getChildLink, getGroupField, isParentGroup, parseWhenParentEmpty, registerChildLink, registerGroup } from "./hierarchy.js";
 import { renderSelectedCounts, renderSelectedValues } from "../actions/filter-actions.js";
 import { applyFilterItemSort } from "./filter-sort.js";
 import { reapplyShowMore } from "./show-more.js";
@@ -271,6 +271,9 @@ export function initFilterGroups(e) {
           return;
         let k = E.closest('[wf-algolia-element="filter-item"]');
         if (!k || !n.contains(k)) return;
+        // pointer-events:none stops the mouse, not keyboard activation or a
+        // programmatic .click(), so the disabled state is enforced here too.
+        if (k.hasAttribute("data-wf-algolia-disabled")) return;
         let D =
           k.getAttribute("wf-algolia-value") ??
           (k instanceof HTMLInputElement ? k.value : null);
@@ -347,6 +350,7 @@ export function initFilterGroups(e) {
           let T = E.closest('[wf-algolia-element="filter-item"]');
           !T ||
             !n.contains(T) ||
+            T.hasAttribute("data-wf-algolia-disabled") ||
             T.querySelector("input") ||
             (w.preventDefault(), T.click());
         }));
@@ -482,15 +486,21 @@ export function syncFacetCounts(e) {
       let n = getFieldOrFacet(t);
       if (!n) return;
       let r = e[n] || {},
-        i = t.getAttribute("wf-algolia-zeroclass") || "is-disabled";
+        i = t.getAttribute("wf-algolia-zeroclass") || "is-disabled",
+        u = Object.keys(r).length >= MAX_FACET_VALUES;
       t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((l) => {
         let s = l.getAttribute("wf-algolia-value");
         if (!s) return;
         let c = l.querySelector('[wf-algolia-element="filter-count"]'),
-          m = r[s] ?? 0;
+          d = r[s];
+        // Absent from a facet map that sits at the maxValuesPerFacet ceiling
+        // means "unknown" (Algolia truncated the tail), not "zero". Leave the
+        // item untouched rather than falsely zeroing and disabling it.
+        if (d === void 0 && u) return;
+        let m = d ?? 0;
         c && (c.textContent = String(m));
         let g = l.hasAttribute("data-wf-algolia-active");
-        m === 0 && !g ? l.classList.add(i) : l.classList.remove(i);
+        m === 0 && !g ? disableFilterEl(l, i) : enableFilterEl(l, i);
       });
       let o = t.querySelector('[wf-algolia-element="filter-group-count"]');
       if (o) {

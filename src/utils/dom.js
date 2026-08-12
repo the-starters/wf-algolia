@@ -39,3 +39,18 @@ export function showElement(e, t) {
 export function hideElement(e) {
   e && (e.style.display = "none");
 }
+// Shared "truly disabled" state for filter items. A CSS class alone is not
+// enough: the consuming Webflow site's zeroclass may only set color/cursor, so
+// the element stays clickable. Callers pass the group's own zeroclass name.
+export function disableFilterEl(e, t = "is-disabled") {
+  (e.classList.add(t),
+    e.setAttribute("data-wf-algolia-disabled", "true"),
+    e.setAttribute("aria-disabled", "true"),
+    (e.style.pointerEvents = "none"));
+}
+export function enableFilterEl(e, t = "is-disabled") {
+  (e.classList.remove(t),
+    e.removeAttribute("data-wf-algolia-disabled"),
+    e.removeAttribute("aria-disabled"),
+    e.style.removeProperty("pointer-events"));
+}

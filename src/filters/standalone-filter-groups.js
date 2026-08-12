@@ -246,6 +246,7 @@ export async function initStandaloneFilterGroups(e, t, n) {
         if (!y) return;
         let b = y.closest('[wf-algolia-element="filter-item"]');
         if (!b || !u.el.contains(b)) return;
+        if (b.hasAttribute("data-wf-algolia-disabled")) return;
         let w =
           b.getAttribute("wf-algolia-value") ??
           (b instanceof HTMLInputElement ? b.value : null);
@@ -272,6 +273,7 @@ export async function initStandaloneFilterGroups(e, t, n) {
           let b = y.closest('[wf-algolia-element="filter-item"]');
           !b ||
             !u.el.contains(b) ||
+            b.hasAttribute("data-wf-algolia-disabled") ||
             b.querySelector("input") ||
             (h.preventDefault(), b.click());
         }));
