@@ -1,3 +1,4 @@
+/* @the-starters/wf-algolia v1.0.12 */
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -3285,6 +3286,9 @@
     });
   }
 
+  // package.json
+  var version2 = "1.0.12";
+
   // src/render/populate.js
   var warnedEmptyAlt = /* @__PURE__ */ new WeakSet();
   var warnedImgFallback = /* @__PURE__ */ new WeakSet();
@@ -3466,7 +3470,7 @@
   function exposePublicAPI(e, t) {
     let n = () => emit("refresh");
     window.WfAlgolia = {
-      version: "1.0.8",
+      version: version2,
       getClient: () => e,
       search: (r, i, o) => e.initIndex(r).search(i, {
         clickAnalytics: true,

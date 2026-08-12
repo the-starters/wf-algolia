@@ -762,6 +762,8 @@ These are referenced from many modules; renaming them consistently unblocks ever
 
 - `window.WfAlgolia.version` is hardcoded `"1.0.0"` (line 1630) while the package is
   1.0.4 — the published d.ts claims it "matches the npm package version"; it doesn't.
+  Fixed in our fork: `src/api/public-api.js` imports `version` from `package.json`
+  (see README § Deployment).
 - The deferred-apply spec is directly referenced in shipped code:
   `docs/specs/active/2026-05-20-deferred-apply-filter-design.md §11 (E2)` (line 433).
 - The debug audit module (~680 lines, 21 rules, MutationObserver re-audit, opt-in via
