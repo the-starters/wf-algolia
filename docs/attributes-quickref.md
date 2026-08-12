@@ -87,6 +87,32 @@ order. Applies to checkbox, radio and div/button item markup — not to native
   instant everywhere else. Skipped under `prefers-reduced-motion` or in a
   background tab.
 
+### Zero-count filter items (`wf-algolia-zeroclass`, 1.0.12)
+
+After every browse query each filter-item's count is refreshed. An item whose count
+is 0 gets the group's `wf-algolia-zeroclass` (default `is-disabled`) **and** is made
+genuinely inert, because a class alone only restyles it: `data-wf-algolia-disabled` +
+`aria-disabled="true"` + inline `pointer-events:none`, native `input`/`select`/
+`button`/`textarea` inside it disabled, and the group's own click/keydown handlers
+early-return on it so Enter and programmatic `.click()` are blocked too. Only controls
+the script disabled itself are marked (`data-wf-algolia-disabled-control`) and later
+re-enabled, so an author-disabled control stays disabled. Applies to browse-scoped
+groups only — standalone (navigation) filter groups are never count-disabled.
+
+- **A ticked item stays clickable at count 0** (applied *or* staged), so a selection
+  can always be undone.
+- Counts come from browse queries that ask for `maxValuesPerFacet=1000` (Algolia's
+  max; without it Algolia returns only the top 100 values per facet). A value absent
+  from a facet map that is *at* that ceiling means "unknown", not 0: the item keeps
+  its last known count and stays clickable. A facet with more than 1000 distinct
+  values (e.g. `work-history.company`) can therefore hold a stale count — a
+  deliberate trade against displaying a wrong `0`.
+
+`wf-algolia-when-parent-empty="disable"` puts the same DOM state on the whole *group*
+element instead. The handler guards test the filter-item itself and do not walk
+ancestors, so inside a group-level disabled group the native inputs are still
+disabled but an input-less div/button item stays keyboard-activatable (known gap).
+
 ## Form Blocks (`<form>` claiming)
 
 Webflow wraps search boxes in a Form Block, and pressing Enter in one would submit

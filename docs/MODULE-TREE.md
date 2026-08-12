@@ -1,15 +1,17 @@
-# wf-algolia 1.0.4 — Reconstructed Module Tree
+# wf-algolia 1.0.12 — Reconstructed Module Tree
 
 `src/app.carved.js` (5,861 lines, 273 top-level statements, 343 symbols) has been
-physically split into 42 real ES modules per `docs/MODULE-MAP.md`. Pure move-and-wire:
+physically split into 44 real ES modules per `docs/MODULE-MAP.md`. Pure move-and-wire:
 statement text is verbatim from the carved file; only `export` keywords and `import`
 declarations were added. Entry: `src/index.js` (side-effect IIFE-style entry — exports
 nothing; runs the init sequence inside `window.Webflow.push`).
 
-Verified equivalence: an order-normalized line diff of `dist/index.js` against the
-pre-split bundle is **empty** (identical 6,141 code lines, only module emission order
-differs), and the `wf-algolia` occurrence count (810) is unchanged in both `dist/index.js`
-and `dist/index.min.js`.
+Equivalence was verified at the time of the split (1.0.4): an order-normalized line diff
+of `dist/index.js` against the pre-split bundle was **empty** (identical 6,141 code lines,
+only module emission order differed), and the `wf-algolia` occurrence count (810) was
+unchanged in both `dist/index.js` and `dist/index.min.js`. Those figures are a historical
+record of that 1.0.4 parity check, not a claim about the current bundle — features have
+landed in `src/` since, so today's `dist/` no longer matches the pre-split bundle.
 
 ## File list (one-line purpose)
 
@@ -23,7 +25,7 @@ and `dist/index.min.js`.
 | `src/core/config.js` | 52 | `initClient` (algoliasearch singleton) + `initConfig` (script-tag `data-*` parsing) |
 | `src/vendor/finsweet.js` | 58 | Vendored `@finsweet/ts-utils` remnants: `WEBFLOW_CSS`, `getSiteId`, `restartWebflow` |
 | `src/utils/flip.js` | 63 | FLIP reorder transition helper (`canAnimateReorder`, `captureRects`, `playFlip`) |
-| `src/utils/dom.js` | 41 | `closeDropdownOnPick`, `showElement`/`hideElement` (`wf-algolia-display` aware) |
+| `src/utils/dom.js` | 72 | `closeDropdownOnPick`, `showElement`/`hideElement` (`wf-algolia-display` aware), `disableFilterEl`/`enableFilterEl` (shared truly-disabled filter state) |
 | `src/utils/sanitize.js` | 69 | `sanitizeUrl` + `sanitizeHtml` (DOMParser tag/attr allowlist strip) |
 | `src/utils/misc.js` | 24 | `escapeFilterValue`, `getPath`, `slugify`, `restartIx2` |
 | `src/utils/format.js` | 87 | `{token}` interpolation, text-template caches, `wf-algolia-if` conditions, value formatters |
@@ -31,21 +33,21 @@ and `dist/index.min.js`.
 | `src/utils/snippet.js` | 4 | `buildSnippetParam` (`attributesToSnippet` builder) |
 | `src/utils/base-filter.js` | 47 | `wf-algolia-base-filter`/`-filter` attribute parser (`field:value` forms), facet-filter pair splitter |
 | `src/insights/insights.js` | 174 | search-insights wiring: `initInsights`, delegated click/conversion listeners, `trackView`/`trackClick`/`trackConversion` |
-| `src/filters/hierarchy.js` | 211 | `wf-algolia-refines` hierarchy/cascade registry, ancestor/descendant walks, `when-parent-empty` behaviors, cached facet-vocabulary fetch + leaf lookup |
-| `src/filters/filter-group.js` | 565 | `initFilterGroups` (checkbox/radio/numeric-min, deferred apply), Webflow input visuals, active-label classes, `syncFacetCounts`, `initSelectFilters` |
+| `src/filters/hierarchy.js` | 200 | `wf-algolia-refines` hierarchy/cascade registry, ancestor/descendant walks, `when-parent-empty` behaviors, cached facet-vocabulary fetch + leaf lookup |
+| `src/filters/filter-group.js` | 582 | `initFilterGroups` (checkbox/radio/numeric-min, deferred apply), Webflow input visuals, active-label classes, `syncFacetCounts`, `initSelectFilters` |
 | `src/filters/show-more.js` | 41 | `wf-algolia-limit` overflow toggle with text-more/less (selected items never fold in `selected-first` groups) |
 | `src/filters/filter-sort.js` | 112 | `wf-algolia-sort` item ordering (`selected-first`/`alpha`/`count`), load-time baseline order, FLIP hookup |
-| `src/filters/dynamic-filters.js` | 169 | Facet-value fetch + dynamic `wf-algolia-facet` group population, facet-count sync |
-| `src/filters/filter-search.js` | 313 | SFFV typeahead (in-group + overlay) and local substring filter search |
+| `src/filters/dynamic-filters.js` | 183 | Facet-value fetch + dynamic `wf-algolia-facet` group population, facet-count sync |
+| `src/filters/filter-search.js` | 324 | SFFV typeahead (in-group + overlay) and local substring filter search |
 | `src/filters/filter-tags.js` | 143 | Active-filter chips (value + range), `wf-algolia-replace-field` display names |
 | `src/filters/range.js` | 81 | Range min/max inputs (Finsweet rangeslider compatible), bounds registry |
-| `src/filters/standalone-filter-groups.js` | 371 | Filter-groups outside browse → navigation links, nested child re-scope, parent-change events |
-| `src/actions/filter-actions.js` | 309 | `syncFilterDOM`, selected-count/value renderers, `clearAllFilters`/`setFilter`/`setQuery`, staging commit/discard wrappers |
+| `src/filters/standalone-filter-groups.js` | 373 | Filter-groups outside browse → navigation links, nested child re-scope, parent-change events |
+| `src/actions/filter-actions.js` | 311 | `syncFilterDOM`, selected-count/value renderers, `clearAllFilters`/`setFilter`/`setQuery`, staging commit/discard wrappers |
 | `src/render/populate.js` | 134 | `populateCard`: text/html/snippet/image/link/if binders (highlight inlined) |
 | `src/render/template.js` | 82 | `cloneAndPopulate`, `removeInjected`, template detach, `renderHits` (+IX2 restart, view tracking) |
 | `src/render/detail.js` | 95 | Detail-mode rendering (objectID from attr/path/query, slug lookup, array-item expansion) |
 | `src/api/public-api.js` | 89 | Middleware pipeline (`searchWithMiddleware`, `multiQueryWithMiddleware`) + `exposePublicAPI` (`window.WfAlgolia`) |
-| `src/browse/browse.js` | 564 | Main browse init: mode buttons, URL restore, all filter subsystems, query dispatch (single/federated), static-list exclusion for shared-element targeting |
+| `src/browse/browse.js` | 567 | Main browse init: mode buttons, URL restore, all filter subsystems, query dispatch (single/federated), static-list exclusion for shared-element targeting |
 | `src/browse/sort.js` | 136 | Sort groups/replica indexes, `?sort=` URL param, sort UI sync |
 | `src/browse/url-sync.js` | 185 | `?q/mode/page/f_*` state ↔ URL, `#wfa=` hash fallback >2000 chars |
 | `src/browse/static-list.js` | 89 | `wf-algolia-disable-filters="true"` one-shot static lists |
@@ -78,21 +80,21 @@ core/filter-state    → utils/misc
 insights/insights    → npm:search-insights
 utils/misc           → vendor/finsweet
 utils/format         → utils/misc
-filters/hierarchy    → core/events
+filters/hierarchy    → core/events, utils/dom
 filters/filter-sort  → utils/flip
 filters/show-more    → filters/filter-sort
 filters/filter-group → core/events, vendor/finsweet, utils/{dom,format}, core/filter-state,
                        filters/{hierarchy,filter-sort,show-more}, actions/filter-actions  ← cycle A
-actions/filter-actions → core/events, utils/format, core/filter-state, filters/{hierarchy,
+actions/filter-actions → core/events, utils/{dom,format}, core/filter-state, filters/{hierarchy,
                        filter-group, show-more, filter-sort}                ← cycle A
 render/populate      → utils/{dom,sanitize,misc,format}
 render/template      → utils/{sanitize,misc,format}, insights/insights, render/populate
 render/detail        → utils/{dom,misc}, render/{populate,template}
 api/public-api       → core/{events,filter-state}, insights/insights, actions/filter-actions,
                        render/{populate,template}
-filters/dynamic-filters → utils/format, core/filter-state, filters/{hierarchy,show-more,filter-sort},
+filters/dynamic-filters → utils/{dom,format}, core/filter-state, filters/{hierarchy,show-more,filter-sort},
                        render/template, core/attributes
-filters/filter-search → utils/{format,debounce}, core/filter-state, filters/{show-more,filter-sort},
+filters/filter-search → utils/{dom,format,debounce}, core/filter-state, filters/{show-more,filter-sort},
                        render/template, core/attributes
 filters/filter-tags  → utils/format, core/filter-state, filters/{hierarchy,filter-group},
                        actions/filter-actions, render/template, core/attributes
@@ -146,5 +148,6 @@ reads `WEBFLOW_CSS` from `vendor/finsweet.js`), which is guaranteed by the direc
   swapped for the `@finsweet/ts-utils` npm package.
 - Function-local minified params (`e`, `t`, `n`, …) are unchanged (next deobfuscation stage).
 - `handleFormBlocks` lives in `src/index.js` (docs place it in `index.ts`).
-- ESLint baseline unchanged: exactly 1 error (`'Document' is not defined`, now at
-  `src/debug/rules.js:381` inside `ruleDataAlgoliaOnCanvas`).
+- ESLint baseline: `npx eslint src` is clean (0 problems); the former lone
+  `'Document' is not defined` error in `ruleDataAlgoliaOnCanvas` is covered by the
+  `Document` global in `eslint.config.js`.

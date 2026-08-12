@@ -39,3 +39,34 @@ export function showElement(e, t) {
 export function hideElement(e) {
   e && (e.style.display = "none");
 }
+// Shared "truly disabled" state for filter items. A CSS class alone is not
+// enough: the consuming Webflow site's zeroclass may only set color/cursor, so
+// the element stays clickable. Callers pass the group's own zeroclass name.
+// pointer-events cannot stop a native control from being reached by keyboard,
+// so the controls inside are disabled too. Only controls we disabled ourselves
+// carry the marker attribute, so re-enabling never overrides the page author.
+var DISABLED_CONTROL_ATTR = "data-wf-algolia-disabled-control";
+function eachNativeControl(e, t) {
+  ("disabled" in e && t(e),
+    e.querySelectorAll("input, select, button, textarea").forEach(t));
+}
+export function disableFilterEl(e, t = "is-disabled") {
+  (e.classList.add(t),
+    e.setAttribute("data-wf-algolia-disabled", "true"),
+    e.setAttribute("aria-disabled", "true"),
+    (e.style.pointerEvents = "none"),
+    eachNativeControl(e, (n) => {
+      n.disabled ||
+        ((n.disabled = !0), n.setAttribute(DISABLED_CONTROL_ATTR, "true"));
+    }));
+}
+export function enableFilterEl(e, t = "is-disabled") {
+  (e.classList.remove(t),
+    e.removeAttribute("data-wf-algolia-disabled"),
+    e.removeAttribute("aria-disabled"),
+    e.style.removeProperty("pointer-events"),
+    eachNativeControl(e, (n) => {
+      n.hasAttribute(DISABLED_CONTROL_ATTR) &&
+        (n.removeAttribute(DISABLED_CONTROL_ATTR), (n.disabled = !1));
+    }));
+}

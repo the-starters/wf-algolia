@@ -1,7 +1,8 @@
 // filters/dynamic-filters — split from app.carved.js (see docs/MODULE-MAP.md)
 import { getTextTemplate, interpolate } from "../utils/format.js";
-import { FILTER_STATE } from "../core/filter-state.js";
-import { formatFacetLabel, getLabelMode } from "./hierarchy.js";
+import { FILTER_STATE, getEffectiveState } from "../core/filter-state.js";
+import { MAX_FACET_VALUES, formatFacetLabel, getLabelMode } from "./hierarchy.js";
+import { disableFilterEl, enableFilterEl } from "../utils/dom.js";
 import { reapplyShowMore } from "./show-more.js";
 import { applyFilterItemSort } from "./filter-sort.js";
 import { removeInjected } from "../render/template.js";
@@ -137,21 +138,34 @@ export async function refreshChildGroup(e, t, n, r) {
   });
 }
 export function syncDynamicFacetCounts(e) {
+  let effectiveState = getEffectiveState();
   document
     .querySelectorAll('[wf-algolia-element="filter-group"][wf-algolia-facet]')
     .forEach((t) => {
       if (!t.closest('[wf-algolia-element="browse"]')) return;
       let n = t.getAttribute("wf-algolia-facet"),
-        r = e[n] || {};
+        r = e[n] || {},
+        c = t.getAttribute("wf-algolia-zeroclass") || "is-disabled",
+        d = Object.keys(r).length >= MAX_FACET_VALUES,
+        selected = effectiveState[n]?.values;
       t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((i) => {
         let o = i.getAttribute("wf-algolia-value");
         if (!o) return;
-        let l = r[o] ?? 0,
+        let g = r[o];
+        // Absent from a facet map that sits at the maxValuesPerFacet ceiling
+        // means "unknown" (Algolia truncated the tail), not "zero". Keep the
+        // last known count by skipping the write, but always clear the disabled
+        // state first: an unknown count can never justify blocking a click, so
+        // a facet parked at the ceiling never disables its items.
+        if (g === void 0 && d) {
+          enableFilterEl(i, c);
+          return;
+        }
+        let l = g ?? 0,
           s = i.querySelector('[wf-algolia-element="filter-count"]');
         s && (s.textContent = String(l));
-        let c = t.getAttribute("wf-algolia-zeroclass") || "is-disabled",
-          m = i.hasAttribute("data-wf-algolia-active");
-        l === 0 && !m ? i.classList.add(c) : i.classList.remove(c);
+        let m = selected?.has(o) || i.hasAttribute("data-wf-algolia-active");
+        l === 0 && !m ? disableFilterEl(i, c) : enableFilterEl(i, c);
       });
     });
 }

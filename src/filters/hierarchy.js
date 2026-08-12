@@ -1,5 +1,6 @@
 // filters/hierarchy — split from app.carved.js (see docs/MODULE-MAP.md)
 import { emit } from "../core/events.js";
+import { disableFilterEl as disableEl, enableFilterEl as enableEl } from "../utils/dom.js";
 export var MAX_DEPTH = 5,
   HIERARCHY_SEPARATOR = " > ",
   MAX_FACET_VALUES = 1000;
@@ -103,18 +104,6 @@ function hideEl(e, t = "is-hidden") {
 }
 function unhideEl(e, t = "is-hidden") {
   (e.classList.remove(t), e.style.removeProperty("display"));
-}
-function disableEl(e, t = "is-disabled") {
-  (e.classList.add(t),
-    e.setAttribute("data-wf-algolia-disabled", "true"),
-    e.setAttribute("aria-disabled", "true"),
-    (e.style.pointerEvents = "none"));
-}
-function enableEl(e, t = "is-disabled") {
-  (e.classList.remove(t),
-    e.removeAttribute("data-wf-algolia-disabled"),
-    e.removeAttribute("aria-disabled"),
-    e.style.removeProperty("pointer-events"));
 }
 export function applyParentEmptyBehavior(e, t) {
   t === "hide" ? hideEl(e) : t === "disable" && disableEl(e);

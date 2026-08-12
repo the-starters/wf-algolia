@@ -153,8 +153,8 @@ Format: `minified` → `proposedName` — purpose.
 | `un` | `getAllChildLinks` | Copy of `allChildLinks` |
 | `hs` | `hideEl` | Add hide class + `display:none !important` |
 | `ws` | `unhideEl` | Reverse of `hideEl` |
-| `ys` | `disableEl` | Add disabled class + aria-disabled + pointer-events:none |
-| `bs` | `enableEl` | Reverse of `disableEl` |
+| `ys` | `disableEl` | Local alias for `disableFilterEl` from `utils/dom` (§2.13) |
+| `bs` | `enableEl` | Local alias for `enableFilterEl` from `utils/dom` (§2.13) |
 | `Fe` | `applyParentEmptyBehavior` | Dispatch hide/disable per mode |
 | `Tt` | `clearParentEmptyBehavior` | Dispatch unhide/enable per mode |
 | `vs` | `collectAncestors` | Walk parent chain (cycle + MAX_DEPTH guards, emits `error`) |
@@ -253,6 +253,8 @@ Format: `minified` → `proposedName` — purpose.
 | `Ai` | `warnedDisplayBlock` | Warn-once set for missing `wf-algolia-display` |
 | `J` | `showElement` | Show w/ `wf-algolia-display` attr, explicit display arg, or `block` + warn |
 | `B` | `hideElement` | `display:none` |
+| — | `disableFilterEl` | Add the group's zeroclass + `data-wf-algolia-disabled` + aria-disabled + pointer-events:none, and disable native controls inside (marked with `data-wf-algolia-disabled-control`) |
+| — | `enableFilterEl` | Reverse of `disableFilterEl`; only re-enables controls carrying the marker |
 
 ### 2.14 utils/sanitize.ts (1259–1322)
 
@@ -341,9 +343,9 @@ Format: `minified` → `proposedName` — purpose.
 | `_i` | `initDynamicFilters` | Populate every browse-scoped `[wf-algolia-facet]` group, then refresh |
 | `Wi` | `populateDynamicGroup` | Render facet values into one group from its filter-template (+field-label, group-count) |
 | `tr` | `refreshChildGroup` | Re-populate a hierarchy child scoped by ancestor `{field:value}` facetFilters |
-| `nr` | `syncDynamicFacetCounts` | Update counts + zeroclass on `wf-algolia-facet` groups after a query |
+| `nr` | `syncDynamicFacetCounts` | Update counts + disabled state (via `disableFilterEl`/`enableFilterEl`, §2.13) on `wf-algolia-facet` groups after a query; a value absent from a facet map already at `MAX_FACET_VALUES` is "unknown", not 0 — keep the last count and re-enable |
 | `rr` | `toggleGroupsByFacetPresence` | Hide field-groups whose facet has no values and no active selection |
-| `ir` (1929) | `syncFacetCounts` | Update counts + zeroclass + group-count on field/facet groups (static variant) |
+| `ir` (1929) | `syncFacetCounts` | Same counts + disabled state + truncation guard as `syncDynamicFacetCounts`, plus group-count, on field/facet groups (static variant) |
 
 ### 2.23 utils — base-filter parser (1894–1928)
 

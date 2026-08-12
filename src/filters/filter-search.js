@@ -1,6 +1,7 @@
 // filters/filter-search — split from app.carved.js (see docs/MODULE-MAP.md)
 import { getTextTemplate, interpolate } from "../utils/format.js";
 import { debounce } from "../utils/debounce.js";
+import { enableFilterEl } from "../utils/dom.js";
 import { FILTER_STATE } from "../core/filter-state.js";
 import { reapplyShowMore } from "./show-more.js";
 import { applyFilterItemSort } from "./filter-sort.js";
@@ -85,7 +86,8 @@ function renderSffvInline(e, t, n, r) {
     s = FILTER_STATE[t]?.values ?? new Set();
   n.forEach(({ value: c, count: m }) => {
     let g = r.cloneNode(!0);
-    (g.removeAttribute("wf-algolia-element"),
+    (enableFilterEl(g, e.getAttribute("wf-algolia-zeroclass") || "is-disabled"),
+      g.removeAttribute("wf-algolia-element"),
       g.classList.add("wf-algolia-injected"),
       g.setAttribute("wf-algolia-element", "filter-item"),
       g.setAttribute("wf-algolia-value", c),
@@ -242,7 +244,8 @@ function renderSffvOverlay(e, t, n, r, i, o = !1) {
     c = FILTER_STATE[n]?.values ?? new Set();
   r.forEach(({ value: m, count: g }) => {
     let u = i.cloneNode(!0);
-    (u.removeAttribute("wf-algolia-element"),
+    (enableFilterEl(u, t.getAttribute("wf-algolia-zeroclass") || "is-disabled"),
+      u.removeAttribute("wf-algolia-element"),
       u.classList.add("wf-algolia-injected"),
       u.setAttribute("wf-algolia-element", "filter-item"),
       u.setAttribute("wf-algolia-value", m),
@@ -273,7 +276,11 @@ function ensureFilterItem(e, t, n) {
       e.querySelectorAll('[wf-algolia-element="filter-item"]'),
     ).filter((b) => !r || !r.contains(b)),
     l = o.find((b) => b.getAttribute("wf-algolia-value") === t);
-  if (l) return l;
+  if (l)
+    return (
+      enableFilterEl(l, e.getAttribute("wf-algolia-zeroclass") || "is-disabled"),
+      l
+    );
   let m = (
     e.querySelector('[wf-algolia-element="filter-template"]') ??
     o[0] ??
@@ -286,7 +293,11 @@ function ensureFilterItem(e, t, n) {
     m.removeAttribute("data-wf-algolia-active"),
     m.removeAttribute("data-wf-algolia-overlay-result"));
   let g = e.getAttribute("wf-algolia-activeclass") || "is-active";
-  (m.classList.remove(g),
+  // The clone source may be a live item that is currently zero-count/disabled
+  // (the fallback template is o[0]). A freshly synthesized item must never
+  // inherit that, or it arrives permanently unclickable.
+  (enableFilterEl(m, e.getAttribute("wf-algolia-zeroclass") || "is-disabled"),
+    m.classList.remove(g),
     m.classList.add("wf-algolia-injected"),
     m.style.display === "none" && (m.style.display = ""),
     m.querySelectorAll("*").forEach((b) => {
