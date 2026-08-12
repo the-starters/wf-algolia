@@ -3241,7 +3241,10 @@
         let s = l.getAttribute("wf-algolia-value");
         if (!s) return;
         let c = l.querySelector('[wf-algolia-element="filter-count"]'), d = r[s];
-        if (d === void 0 && u) return;
+        if (d === void 0 && u) {
+          enableFilterEl(l, i);
+          return;
+        }
         let m = d ?? 0;
         c && (c.textContent = String(m));
         let g = selected?.has(s) || l.hasAttribute("data-wf-algolia-active");
@@ -3728,7 +3731,10 @@
         let o = i.getAttribute("wf-algolia-value");
         if (!o) return;
         let g = r[o];
-        if (g === void 0 && d) return;
+        if (g === void 0 && d) {
+          enableFilterEl(i, c);
+          return;
+        }
         let l = g ?? 0, s = i.querySelector('[wf-algolia-element="filter-count"]');
         s && (s.textContent = String(l));
         let m = selected?.has(o) || i.hasAttribute("data-wf-algolia-active");

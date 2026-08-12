@@ -153,9 +153,14 @@ export function syncDynamicFacetCounts(e) {
         if (!o) return;
         let g = r[o];
         // Absent from a facet map that sits at the maxValuesPerFacet ceiling
-        // means "unknown" (Algolia truncated the tail), not "zero". Leave the
-        // item untouched rather than falsely zeroing and disabling it.
-        if (g === void 0 && d) return;
+        // means "unknown" (Algolia truncated the tail), not "zero". Keep the
+        // last known count by skipping the write, but always clear the disabled
+        // state first: an unknown count can never justify blocking a click, so
+        // a facet parked at the ceiling never disables its items.
+        if (g === void 0 && d) {
+          enableFilterEl(i, c);
+          return;
+        }
         let l = g ?? 0,
           s = i.querySelector('[wf-algolia-element="filter-count"]');
         s && (s.textContent = String(l));
