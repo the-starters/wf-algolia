@@ -3231,11 +3231,12 @@
     });
   }
   function syncFacetCounts(e) {
+    let effectiveState = getEffectiveState();
     document.querySelectorAll('[wf-algolia-element="filter-group"]').forEach((t) => {
       if (!t.closest('[wf-algolia-element="browse"]')) return;
       let n = getFieldOrFacet(t);
       if (!n) return;
-      let r = e[n] || {}, i = t.getAttribute("wf-algolia-zeroclass") || "is-disabled", u = Object.keys(r).length >= MAX_FACET_VALUES;
+      let r = e[n] || {}, i = t.getAttribute("wf-algolia-zeroclass") || "is-disabled", u = Object.keys(r).length >= MAX_FACET_VALUES, selected = effectiveState[n]?.values;
       t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((l) => {
         let s = l.getAttribute("wf-algolia-value");
         if (!s) return;
@@ -3243,7 +3244,7 @@
         if (d === void 0 && u) return;
         let m = d ?? 0;
         c && (c.textContent = String(m));
-        let g = l.hasAttribute("data-wf-algolia-active");
+        let g = selected?.has(s) || l.hasAttribute("data-wf-algolia-active");
         m === 0 && !g ? disableFilterEl(l, i) : enableFilterEl(l, i);
       });
       let o = t.querySelector('[wf-algolia-element="filter-group-count"]');
@@ -3719,9 +3720,10 @@
     });
   }
   function syncDynamicFacetCounts(e) {
+    let effectiveState = getEffectiveState();
     document.querySelectorAll('[wf-algolia-element="filter-group"][wf-algolia-facet]').forEach((t) => {
       if (!t.closest('[wf-algolia-element="browse"]')) return;
-      let n = t.getAttribute("wf-algolia-facet"), r = e[n] || {}, c = t.getAttribute("wf-algolia-zeroclass") || "is-disabled", d = Object.keys(r).length >= MAX_FACET_VALUES;
+      let n = t.getAttribute("wf-algolia-facet"), r = e[n] || {}, c = t.getAttribute("wf-algolia-zeroclass") || "is-disabled", d = Object.keys(r).length >= MAX_FACET_VALUES, selected = effectiveState[n]?.values;
       t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((i) => {
         let o = i.getAttribute("wf-algolia-value");
         if (!o) return;
@@ -3729,7 +3731,7 @@
         if (g === void 0 && d) return;
         let l = g ?? 0, s = i.querySelector('[wf-algolia-element="filter-count"]');
         s && (s.textContent = String(l));
-        let m = i.hasAttribute("data-wf-algolia-active");
+        let m = selected?.has(o) || i.hasAttribute("data-wf-algolia-active");
         l === 0 && !m ? disableFilterEl(i, c) : enableFilterEl(i, c);
       });
     });

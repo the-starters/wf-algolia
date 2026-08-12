@@ -1,6 +1,6 @@
 // filters/dynamic-filters — split from app.carved.js (see docs/MODULE-MAP.md)
 import { getTextTemplate, interpolate } from "../utils/format.js";
-import { FILTER_STATE } from "../core/filter-state.js";
+import { FILTER_STATE, getEffectiveState } from "../core/filter-state.js";
 import { MAX_FACET_VALUES, formatFacetLabel, getLabelMode } from "./hierarchy.js";
 import { disableFilterEl, enableFilterEl } from "../utils/dom.js";
 import { reapplyShowMore } from "./show-more.js";
@@ -138,6 +138,7 @@ export async function refreshChildGroup(e, t, n, r) {
   });
 }
 export function syncDynamicFacetCounts(e) {
+  let effectiveState = getEffectiveState();
   document
     .querySelectorAll('[wf-algolia-element="filter-group"][wf-algolia-facet]')
     .forEach((t) => {
@@ -145,7 +146,8 @@ export function syncDynamicFacetCounts(e) {
       let n = t.getAttribute("wf-algolia-facet"),
         r = e[n] || {},
         c = t.getAttribute("wf-algolia-zeroclass") || "is-disabled",
-        d = Object.keys(r).length >= MAX_FACET_VALUES;
+        d = Object.keys(r).length >= MAX_FACET_VALUES,
+        selected = effectiveState[n]?.values;
       t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((i) => {
         let o = i.getAttribute("wf-algolia-value");
         if (!o) return;
@@ -157,7 +159,7 @@ export function syncDynamicFacetCounts(e) {
         let l = g ?? 0,
           s = i.querySelector('[wf-algolia-element="filter-count"]');
         s && (s.textContent = String(l));
-        let m = i.hasAttribute("data-wf-algolia-active");
+        let m = selected?.has(o) || i.hasAttribute("data-wf-algolia-active");
         l === 0 && !m ? disableFilterEl(i, c) : enableFilterEl(i, c);
       });
     });

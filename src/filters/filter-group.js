@@ -3,7 +3,7 @@ import { emit } from "../core/events.js";
 import { WEBFLOW_CSS } from "../vendor/finsweet.js";
 import { closeDropdownOnPick, disableFilterEl, enableFilterEl } from "../utils/dom.js";
 import { getTextTemplate, interpolate } from "../utils/format.js";
-import { FILTER_STATE, STAGING_STATE, stageFilter, toggleStateValue } from "../core/filter-state.js";
+import { FILTER_STATE, STAGING_STATE, getEffectiveState, stageFilter, toggleStateValue } from "../core/filter-state.js";
 import { MAX_DEPTH, MAX_FACET_VALUES, applyParentEmptyBehavior, getChildLink, getGroupField, isParentGroup, parseWhenParentEmpty, registerChildLink, registerGroup } from "./hierarchy.js";
 import { renderSelectedCounts, renderSelectedValues } from "../actions/filter-actions.js";
 import { applyFilterItemSort } from "./filter-sort.js";
@@ -479,6 +479,7 @@ export function initFilterGroups(e) {
     }));
 }
 export function syncFacetCounts(e) {
+  let effectiveState = getEffectiveState();
   document
     .querySelectorAll('[wf-algolia-element="filter-group"]')
     .forEach((t) => {
@@ -487,7 +488,8 @@ export function syncFacetCounts(e) {
       if (!n) return;
       let r = e[n] || {},
         i = t.getAttribute("wf-algolia-zeroclass") || "is-disabled",
-        u = Object.keys(r).length >= MAX_FACET_VALUES;
+        u = Object.keys(r).length >= MAX_FACET_VALUES,
+        selected = effectiveState[n]?.values;
       t.querySelectorAll('[wf-algolia-element="filter-item"]').forEach((l) => {
         let s = l.getAttribute("wf-algolia-value");
         if (!s) return;
@@ -499,7 +501,7 @@ export function syncFacetCounts(e) {
         if (d === void 0 && u) return;
         let m = d ?? 0;
         c && (c.textContent = String(m));
-        let g = l.hasAttribute("data-wf-algolia-active");
+        let g = selected?.has(s) || l.hasAttribute("data-wf-algolia-active");
         m === 0 && !g ? disableFilterEl(l, i) : enableFilterEl(l, i);
       });
       let o = t.querySelector('[wf-algolia-element="filter-group-count"]');
