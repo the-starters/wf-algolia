@@ -16,6 +16,7 @@ key (the same one already embedded in the live Webflow pages).
   Captures console output and Algolia XHR bodies on `window.__repro` so the
   assertions can be read straight off the page.
 
-Local preview: serve this folder with any static server (in the workspace:
-`preview_start wf-algolia` serves the sibling reference folder; for this repo
-just `npx serve examples`).
+Local preview: serve the **repo root**, not this folder — the pages reference
+`../dist/`, so serving `examples/` itself 404s the bundle. From the repo root run
+`python3 -m http.server 8000`, then open
+`http://localhost:8000/examples/multi-index.html`.
