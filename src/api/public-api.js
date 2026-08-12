@@ -1,4 +1,8 @@
 // api/public-api — split from app.carved.js (see docs/MODULE-MAP.md)
+// Single source of truth for the version: package.json. esbuild bundles the JSON
+// import and tree-shakes it down to the one field, so `WfAlgolia.version` can
+// never drift from the released tag.
+import { version } from "../../package.json";
 import { emit, off, on } from "../core/events.js";
 import { FILTER_STATE } from "../core/filter-state.js";
 import { insights, trackClick, trackConversion } from "../insights/insights.js";
@@ -38,7 +42,7 @@ export async function multiQueryWithMiddleware(e, t) {
 export function exposePublicAPI(e, t) {
   let n = () => emit("refresh");
   window.WfAlgolia = {
-    version: "1.0.8",
+    version: version,
     getClient: () => e,
     search: (r, i, o) =>
       e.initIndex(r).search(i, {
