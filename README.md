@@ -62,9 +62,10 @@ dist/                        rebuilt output — COMMITTED (jsDelivr serves it fr
   filters/{filter-group,filter-search,range,filter-tags,dynamic-filters,standalone-filter-groups},
   actions/filter-actions, pagination/{numbered,load-more,infinite-scroll},
   render/{template,populate,detail}, recommend/recommend, elements/hit-preview, utils/sanitize}`.
-- Full attribute/feature documentation: `llms-full.txt` at the repo root and
+- Full attribute/feature documentation lives upstream at
   https://wf-algolia-docs.candidleap.com/ (their docs stay valid for our fork as long
-  as we keep the attribute grammar).
+  as we keep the attribute grammar); the condensed local copy is
+  [`docs/attributes-quickref.md`](docs/attributes-quickref.md).
 - The public API includes `WfAlgolia.use({beforeSearch, afterSearch})` middleware —
   check whether a wanted feature is achievable there before patching the fork.
 
