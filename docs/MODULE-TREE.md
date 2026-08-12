@@ -1,15 +1,17 @@
-# wf-algolia 1.0.4 — Reconstructed Module Tree
+# wf-algolia 1.0.12 — Reconstructed Module Tree
 
 `src/app.carved.js` (5,861 lines, 273 top-level statements, 343 symbols) has been
-physically split into 42 real ES modules per `docs/MODULE-MAP.md`. Pure move-and-wire:
+physically split into 44 real ES modules per `docs/MODULE-MAP.md`. Pure move-and-wire:
 statement text is verbatim from the carved file; only `export` keywords and `import`
 declarations were added. Entry: `src/index.js` (side-effect IIFE-style entry — exports
 nothing; runs the init sequence inside `window.Webflow.push`).
 
-Verified equivalence: an order-normalized line diff of `dist/index.js` against the
-pre-split bundle is **empty** (identical 6,141 code lines, only module emission order
-differs), and the `wf-algolia` occurrence count (810) is unchanged in both `dist/index.js`
-and `dist/index.min.js`.
+Equivalence was verified at the time of the split (1.0.4): an order-normalized line diff
+of `dist/index.js` against the pre-split bundle was **empty** (identical 6,141 code lines,
+only module emission order differed), and the `wf-algolia` occurrence count (810) was
+unchanged in both `dist/index.js` and `dist/index.min.js`. Those figures are a historical
+record of that 1.0.4 parity check, not a claim about the current bundle — features have
+landed in `src/` since, so today's `dist/` no longer matches the pre-split bundle.
 
 ## File list (one-line purpose)
 
