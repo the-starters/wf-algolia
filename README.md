@@ -37,7 +37,8 @@ render via the complementary [wf-xano](https://github.com/the-starters/wf-xano) 
   symbols renamed per `docs/MODULE-MAP.md`.
 - ✅ **Released & deployed**: tagged from `v1.0.4-re.0` (parity build) onward; fork-only
   features continue upstream's numbering (starting with `v1.0.5`, which added
-  `wf-algolia-format="short-name"`).
+  `wf-algolia-format="short-name"`; `v1.0.7` adds `wf-algolia-format="decimal"` —
+  one-decimal number, e.g. `5` → `5.0`).
 
 ## Layout
 
