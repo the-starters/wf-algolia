@@ -2345,6 +2345,10 @@
         let n = parseFloat(e);
         return isNaN(n) ? "" : `\u2605 ${n.toFixed(1)}`;
       }
+      case "decimal": {
+        let n = parseFloat(e);
+        return isNaN(n) ? "" : n.toFixed(1);
+      }
       case "year": {
         let n = String(e);
         if (/^\d{4}$/.test(n)) return n;
