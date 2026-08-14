@@ -1,4 +1,4 @@
-/* @the-starters/wf-algolia v1.0.12 */
+/* @the-starters/wf-algolia v1.0.13 */
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -3306,7 +3306,7 @@
   }
 
   // package.json
-  var version2 = "1.0.12";
+  var version2 = "1.0.13";
 
   // src/render/populate.js
   var warnedEmptyAlt = /* @__PURE__ */ new WeakSet();
