@@ -39,7 +39,7 @@ files are split across two ranges; both are listed.
 | 13 | 1236–1258 | `utils/dom.ts` (show/hide) | high | `wf-algolia-display` warning with docs URL `attribute-reference#wf-algolia-display` |
 | 14 | 1259–1322 | `utils/sanitize.ts` | high | `Blocked unsafe URL`, tag allowlist, DOMParser strip — matches d.ts/docs `sanitizeHtml`/`sanitizeUrl` |
 | 15 | 1323–1344 | `utils/` misc (escapeFilterValue, getPath, slugify, restartIx2) | high | Docs: "utils — sanitizeHtml/sanitizeUrl, escapeFilterValue, format, dom, snippet" |
-| 16 | 1345–1399 | `utils/format.ts` (conditions + value formatters) | med | `wf-algolia-if` comparators; `rating/year/currency/number` formats |
+| 16 | 1345–1399 | `utils/format.ts` (conditions + value formatters) | med | `wf-algolia-if` comparators; `rating/decimal/year/currency/number` formats |
 | 17 | 1401–1529 | `render/populate.ts` (+ `render/highlight.ts` logic inlined) | high | `populateCard text/html/snippet/image/link error:` strings; `wf-algolia-text/image/link/html/snippet/if/alt` binders |
 | 18 | 1530–1602 | `render/template.ts` | high | `cloneAndPopulate` per d.ts; `.wf-algolia-injected`, `Failed to clone hit:`; `renderHits` triggers IX2 restart + view tracking |
 | 19 | 1603–1626 | `api/public-api.ts` middleware half (beforeSearch/afterSearch pipeline) | med | Exact shape of `WfAlgoliaMiddleware` in d.ts; consumed by every search path |
@@ -282,7 +282,7 @@ Format: `minified` → `proposedName` — purpose.
 |---|---|---|
 | `Fs` | `COMPARATORS` | `["!==","===",">=","<=",">","<"]` (order matters) |
 | `xi` | `evalCondition` | Evaluate `wf-algolia-if` expressions against a hit |
-| `vn` | `formatValue` | `wf-algolia-format`: rating (★ n.n), year, currency ($n.nn), number (locale), short-name (John Paul Dionisio → John P. D.) |
+| `vn` | `formatValue` | `wf-algolia-format`: rating (★ n.n), decimal (n.n), year, currency ($n.nn), number (locale), short-name (John Paul Dionisio → John P. D.) |
 | `Ii` | `applySlugifyAttr` | Slugify a link value when `wf-algolia-slugify="true"` |
 
 ### 2.17 render/populate.ts (1401–1529)
