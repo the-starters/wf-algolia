@@ -51,7 +51,13 @@ function parseNumericExpression(e) {
 }
 export function readBaseNumericFilter(e, t, n) {
   let r = e.getAttribute(t);
-  if (r === null || r.trim() === "") return null;
+  if (r === null) return null;
+  if (r.trim() === "") {
+    n?.(
+      `${t}="${r}" is malformed (expected "field <op> number" or "field <op> now[±N{s|m|h|d|w}]"); ignoring it.`,
+    );
+    return null;
+  }
   let i = [];
   for (let l of r.split(",")) {
     if (!l.trim()) continue;
