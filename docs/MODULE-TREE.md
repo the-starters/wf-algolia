@@ -1,9 +1,10 @@
-# wf-algolia 1.0.12 — Reconstructed Module Tree
+# wf-algolia 1.0.14 — Reconstructed Module Tree
 
-`src/app.carved.js` (5,861 lines, 273 top-level statements, 343 symbols) has been
-physically split into 44 real ES modules per `docs/MODULE-MAP.md`. Pure move-and-wire:
-statement text is verbatim from the carved file; only `export` keywords and `import`
-declarations were added. Entry: `src/index.js` (side-effect IIFE-style entry — exports
+`src/app.carved.js` (5,861 lines, 273 top-level statements, 343 symbols) was
+physically split into 44 real ES modules per `docs/MODULE-MAP.md`. That split was pure
+move-and-wire: statement text is verbatim from the carved file; only `export` keywords
+and `import` declarations were added. Fork-only modules added since then bring the
+current tree to 45 files. Entry: `src/index.js` (side-effect IIFE-style entry — exports
 nothing; runs the init sequence inside `window.Webflow.push`).
 
 Equivalence was verified at the time of the split (1.0.4): an order-normalized line diff
@@ -32,6 +33,7 @@ landed in `src/` since, so today's `dist/` no longer matches the pre-split bundl
 | `src/utils/debounce.js` | 7 | Trailing debounce |
 | `src/utils/snippet.js` | 4 | `buildSnippetParam` (`attributesToSnippet` builder) |
 | `src/utils/base-filter.js` | 47 | `wf-algolia-base-filter`/`-filter` attribute parser (`field:value` forms), facet-filter pair splitter |
+| `src/utils/base-numeric-filter.js` | 96 | Always-on numeric-filter parser and query-time relative-time resolver for browse/static lists |
 | `src/insights/insights.js` | 174 | search-insights wiring: `initInsights`, delegated click/conversion listeners, `trackView`/`trackClick`/`trackConversion` |
 | `src/filters/hierarchy.js` | 200 | `wf-algolia-refines` hierarchy/cascade registry, ancestor/descendant walks, `when-parent-empty` behaviors, cached facet-vocabulary fetch + leaf lookup |
 | `src/filters/filter-group.js` | 582 | `initFilterGroups` (checkbox/radio/numeric-min, deferred apply), Webflow input visuals, active-label classes, `syncFacetCounts`, `initSelectFilters` |
@@ -47,10 +49,10 @@ landed in `src/` since, so today's `dist/` no longer matches the pre-split bundl
 | `src/render/template.js` | 82 | `cloneAndPopulate`, `removeInjected`, template detach, `renderHits` (+IX2 restart, view tracking) |
 | `src/render/detail.js` | 95 | Detail-mode rendering (objectID from attr/path/query, slug lookup, array-item expansion) |
 | `src/api/public-api.js` | 89 | Middleware pipeline (`searchWithMiddleware`, `multiQueryWithMiddleware`) + `exposePublicAPI` (`window.WfAlgolia`) |
-| `src/browse/browse.js` | 567 | Main browse init: mode buttons, URL restore, all filter subsystems, query dispatch (single/federated), static-list exclusion for shared-element targeting |
+| `src/browse/browse.js` | 580 | Main browse init: mode buttons, URL restore, base numeric filters, all filter subsystems, query dispatch (single/federated), static-list exclusion for shared-element targeting |
 | `src/browse/sort.js` | 136 | Sort groups/replica indexes, `?sort=` URL param, sort UI sync |
 | `src/browse/url-sync.js` | 185 | `?q/mode/page/f_*` state ↔ URL, `#wfa=` hash fallback >2000 chars |
-| `src/browse/static-list.js` | 89 | `wf-algolia-disable-filters="true"` one-shot static lists |
+| `src/browse/static-list.js` | 105 | `wf-algolia-disable-filters="true"` one-shot static lists with base facet/numeric filters |
 | `src/pagination/infinite-scroll.js` | 27 | IntersectionObserver sentinel loader |
 | `src/pagination/numbered.js` | 100 | Numbered pagination controls, results-count/page-info templates (skips static-list-owned counts) |
 | `src/search/search.js` | 72 | Scoped single-index search-input |
@@ -66,7 +68,7 @@ landed in `src/` since, so today's `dist/` no longer matches the pre-split bundl
 
 Leaf modules (no local imports): `core/events`, `core/attributes`, `core/accessibility`,
 `vendor/finsweet`, `utils/dom`, `utils/sanitize`, `utils/debounce`, `utils/snippet`,
-`utils/base-filter`, `utils/flip`, `browse/url-sync`, `pagination/infinite-scroll`,
+`utils/base-filter`, `utils/base-numeric-filter`, `utils/flip`, `browse/url-sync`, `pagination/infinite-scroll`,
 `debug/rules`.
 
 ```txt
@@ -102,12 +104,12 @@ filters/range        → utils/debounce, core/filter-state
 filters/standalone-filter-groups → core/events, utils/misc, filters/{hierarchy,dynamic-filters},
                        render/template, core/attributes, browse/url-sync, elements/hit-preview
 browse/sort          → utils/{dom,format}
-browse/browse        → core/{events,filter-state,attributes}, utils/{dom,debounce,snippet,base-filter},
+browse/browse        → core/{events,filter-state,attributes}, utils/{dom,debounce,snippet,base-filter,base-numeric-filter},
                        insights/insights, filters/{hierarchy,filter-group,show-more,dynamic-filters,
                        filter-search,filter-tags,range}, actions/filter-actions, render/template,
                        api/public-api, pagination/{infinite-scroll,numbered}, browse/{sort,url-sync} ← cycle B
 pagination/numbered  → utils/format, core/filter-state, browse/{url-sync,browse}   ← cycle B
-browse/static-list   → utils/{dom,snippet,base-filter}, render/template, api/public-api,
+browse/static-list   → utils/{dom,snippet,base-filter,base-numeric-filter}, render/template, api/public-api,
                        core/attributes, pagination/numbered
 search/search        → utils/{dom,format,debounce,snippet}, render/template, api/public-api, core/attributes
 search/multi-search  → utils/{dom,format,debounce,snippet}, render/template, api/public-api, core/attributes

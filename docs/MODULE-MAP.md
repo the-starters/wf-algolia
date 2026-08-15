@@ -355,6 +355,12 @@ Format: `minified` → `proposedName` — purpose.
 | `Ns` | `pairToFacetFilter` | (field, value) → `[["field:value"]]` |
 | `Lt` | `readBaseFilter` | Read `{attr}-field`+`{attr}-value` or `{attr}="field:value"` with malformed-warning callback |
 
+Fork-only sibling (v1.0.14, no upstream counterpart): `utils/base-numeric-filter.js` —
+`readBaseNumericFilter` / `resolveBaseNumericFilters` parse
+`wf-algolia-base-numeric-filter` ("field op number|now±N{s|m|h|d|w}", comma-separated;
+`-unit="s"` for epoch-seconds indexes) into always-on `numericFilters`, resolved at
+query time and merged in `browse.js` (`withBaseNumericFilters`) + `static-list.js`.
+
 ### 2.24 utils — debounce (1975–1980)
 
 | Symbol | Proposed name | Purpose |
