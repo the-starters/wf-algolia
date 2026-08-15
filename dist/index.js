@@ -3649,7 +3649,7 @@
       let r = t.indexOf(n);
       if (r > 0) {
         let i = t.slice(0, r).trim(), o = t.slice(r + n.length).trim();
-        if (!i || !o) return null;
+        if (!i || !o || !/^[A-Za-z0-9_.\-]+$/.test(i)) return null;
         let l = REL_NOW_RE.exec(o);
         if (l)
           return {
