@@ -4,6 +4,7 @@ import { hideElement, showElement } from "../utils/dom.js";
 import { debounce } from "../utils/debounce.js";
 import { buildSnippetParam } from "../utils/snippet.js";
 import { readBaseFilter } from "../utils/base-filter.js";
+import { readBaseNumericFilter, resolveBaseNumericFilters } from "../utils/base-numeric-filter.js";
 import { FILTER_STATE, STAGING_STATE, commitStaging, discardStaging, stateToAlgoliaFilters, stateToAlgoliaFiltersExcluding } from "../core/filter-state.js";
 import { setIndexNameResolver } from "../insights/insights.js";
 import { MAX_FACET_VALUES, applyParentEmptyBehavior, clearParentEmptyBehavior, collectDescendants, getAllChildLinks, getAncestorSelections, syncHierarchyVisibility } from "../filters/hierarchy.js";
@@ -60,9 +61,14 @@ function initSortSelect(e, t) {
 }
 export var urlSyncEnabled = !1,
   paginationMode = "load-more",
-  baseFilters = [];
+  baseFilters = [],
+  baseNumericFilterConfig = null;
 function withBaseFilters(e) {
   return baseFilters.length ? [...e, ...baseFilters] : e;
+}
+function withBaseNumericFilters(e) {
+  let t = resolveBaseNumericFilters(baseNumericFilterConfig);
+  return t.length ? [...e, ...t] : e;
 }
 export var browseState,
   browseClient,
@@ -115,6 +121,11 @@ export async function initBrowsePage(e, t, n) {
       readBaseFilter(i, "wf-algolia-base-filter", (m) =>
         console.warn(`[wf-algolia] ${m}`, i),
       ) ?? []),
+    (baseNumericFilterConfig = readBaseNumericFilter(
+      i,
+      "wf-algolia-base-numeric-filter",
+      (m) => console.warn(`[wf-algolia] ${m}`, i),
+    )),
     urlSyncEnabled)
   ) {
     let m = readStateFromURL();
@@ -376,8 +387,9 @@ export function runBrowseQuery(e = !1) {
 }
 function runSingleIndexQuery(e, t, n, r, i) {
   let { facetFilters: o, numericFilters: l } =
-      stateToAlgoliaFilters(FILTER_STATE),
-    s =
+      stateToAlgoliaFilters(FILTER_STATE);
+  l = withBaseNumericFilters(l);
+  let s =
       getCurrentSort() ||
       browseState.sort ||
       (browseState.mode !== "all" ? browseState.mode : browseIndex),
@@ -462,6 +474,7 @@ function runFederatedQuery(e, t, n, r, i) {
   modeIndexes.forEach((c) => {
     let m = o[c] || {},
       { facetFilters: g, numericFilters: u } = stateToAlgoliaFilters(m);
+    u = withBaseNumericFilters(u);
     (s.push({
       indexName: c,
       query: browseState.query || "",

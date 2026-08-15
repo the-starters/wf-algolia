@@ -1,4 +1,4 @@
-/* @the-starters/wf-algolia v1.0.13 */
+/* @the-starters/wf-algolia v1.0.14 */
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -3306,7 +3306,7 @@
   }
 
   // package.json
-  var version2 = "1.0.13";
+  var version2 = "1.0.14";
 
   // src/render/populate.js
   var warnedEmptyAlt = /* @__PURE__ */ new WeakSet();
@@ -3630,6 +3630,75 @@
       return o === null && n?.(`${t}="${i}" is malformed (expected "field:value"); ignoring.`), o;
     }
     return null;
+  }
+
+  // src/utils/base-numeric-filter.js
+  var NUMERIC_OPS = [">=", "<=", "!=", ">", "<", "="];
+  var REL_NOW_RE = /^now(?:\s*([+-])\s*(\d+)\s*(s|m|h|d|w))?$/i;
+  var UNIT_MS = {
+    s: 1e3,
+    m: 6e4,
+    h: 36e5,
+    d: 864e5,
+    w: 6048e5
+  };
+  function parseNumericExpression(e) {
+    let t = e.trim();
+    if (!t) return null;
+    for (let n of NUMERIC_OPS) {
+      let r = t.indexOf(n);
+      if (r > 0) {
+        let i = t.slice(0, r).trim(), o = t.slice(r + n.length).trim();
+        if (!i || !o) return null;
+        let l = REL_NOW_RE.exec(o);
+        if (l)
+          return {
+            field: i,
+            op: n,
+            rel: {
+              sign: l[1] === "+" ? 1 : -1,
+              amount: l[2] ? parseInt(l[2], 10) : 0,
+              unit: (l[3] || "s").toLowerCase()
+            }
+          };
+        let s = Number(o);
+        return Number.isFinite(s) ? {
+          field: i,
+          op: n,
+          value: s
+        } : null;
+      }
+    }
+    return null;
+  }
+  function readBaseNumericFilter(e, t, n) {
+    let r = e.getAttribute(t);
+    if (r === null || r.trim() === "") return null;
+    let i = [];
+    for (let l of r.split(",")) {
+      if (!l.trim()) continue;
+      let s = parseNumericExpression(l);
+      s === null ? n?.(
+        `${t} expression "${l.trim()}" is malformed (expected "field <op> number" or "field <op> now[\xB1N{s|m|h|d|w}]"); ignoring it.`
+      ) : i.push(s);
+    }
+    let o = (e.getAttribute(`${t}-unit`) || "ms").trim().toLowerCase();
+    return o !== "ms" && o !== "s" && (n?.(`${t}-unit="${o}" is invalid (expected "ms" or "s"); using "ms".`), o = "ms"), i.length === 0 ? null : {
+      specs: i,
+      unit: o
+    };
+  }
+  function resolveBaseNumericFilters(e) {
+    if (!e) return [];
+    let t = Date.now();
+    return e.specs.map((n) => {
+      let r = n.value;
+      if (n.rel) {
+        let i = t + n.rel.sign * n.rel.amount * UNIT_MS[n.rel.unit];
+        r = e.unit === "s" ? Math.floor(i / 1e3) : i;
+      }
+      return `${n.field}${n.op}${r}`;
+    });
   }
 
   // src/filters/dynamic-filters.js
@@ -4469,8 +4538,13 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
   var urlSyncEnabled = false;
   var paginationMode = "load-more";
   var baseFilters = [];
+  var baseNumericFilterConfig = null;
   function withBaseFilters(e) {
     return baseFilters.length ? [...e, ...baseFilters] : e;
+  }
+  function withBaseNumericFilters(e) {
+    let t = resolveBaseNumericFilters(baseNumericFilterConfig);
+    return t.length ? [...e, ...t] : e;
   }
   var browseState;
   var browseClient;
@@ -4508,7 +4582,11 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       i,
       "wf-algolia-base-filter",
       (m) => console.warn(`[wf-algolia] ${m}`, i)
-    ) ?? [], urlSyncEnabled) {
+    ) ?? [], baseNumericFilterConfig = readBaseNumericFilter(
+      i,
+      "wf-algolia-base-numeric-filter",
+      (m) => console.warn(`[wf-algolia] ${m}`, i)
+    ), urlSyncEnabled) {
       let m = readStateFromURL();
       if (m.query || m.mode !== "all" || m.page > 0 || Object.keys(m.filters).length > 0) {
         browseState.query = m.query, browseState.mode = m.mode, browseState.page = m.page, Object.assign(FILTER_STATE, m.filters);
@@ -4676,7 +4754,9 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
     return !t || !n ? Promise.resolve() : (showElement(r), browseState.mode === "all" && !browseState.sort && !getCurrentSort() ? runFederatedQuery(t, n, r, i, e) : runSingleIndexQuery(t, n, r, i, e));
   }
   function runSingleIndexQuery(e, t, n, r, i) {
-    let { facetFilters: o, numericFilters: l } = stateToAlgoliaFilters(FILTER_STATE), s = getCurrentSort() || browseState.sort || (browseState.mode !== "all" ? browseState.mode : browseIndex), c = withBaseFilters(o), m = {
+    let { facetFilters: o, numericFilters: l } = stateToAlgoliaFilters(FILTER_STATE);
+    l = withBaseNumericFilters(l);
+    let s = getCurrentSort() || browseState.sort || (browseState.mode !== "all" ? browseState.mode : browseIndex), c = withBaseFilters(o), m = {
       hitsPerPage: browseState.hitsPerPage,
       page: browseState.page,
       facets: ["*"],
@@ -4730,6 +4810,7 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
     let o = buildPerIndexStates(), l = Math.ceil(browseState.hitsPerPage / modeIndexes.length), d = disjunctiveAttrs(FILTER_STATE), p = [], s = [];
     modeIndexes.forEach((c) => {
       let m = o[c] || {}, { facetFilters: g, numericFilters: u } = stateToAlgoliaFilters(m);
+      u = withBaseNumericFilters(u);
       s.push({
         indexName: c,
         query: browseState.query || "",
@@ -6475,7 +6556,11 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       )), Promise.resolve();
     let s = readBaseFilter(r, "wf-algolia-filter", (y) => {
       warnedStaticBadFilter.has(r) || (warnedStaticBadFilter.add(r), console.warn(`[wf-algolia] static list ${y}`, r));
-    }), c = parseInt(r.getAttribute("wf-algolia-per-page") || "", 10), m = Number.isNaN(c) || c <= 0 ? STATIC_DEFAULT_PER_PAGE : c, g = r.querySelector('[wf-algolia-element="loader"]'), u = r.querySelector('[wf-algolia-element="no-results"]');
+    }), x = resolveBaseNumericFilters(
+      readBaseNumericFilter(r, "wf-algolia-base-numeric-filter", (y) => {
+        warnedStaticBadFilter.has(r) || (warnedStaticBadFilter.add(r), console.warn(`[wf-algolia] static list ${y}`, r));
+      })
+    ), c = parseInt(r.getAttribute("wf-algolia-per-page") || "", 10), m = Number.isNaN(c) || c <= 0 ? STATIC_DEFAULT_PER_PAGE : c, g = r.querySelector('[wf-algolia-element="loader"]'), u = r.querySelector('[wf-algolia-element="no-results"]');
     showElement(g);
     let h = {
       hitsPerPage: m,
@@ -6483,6 +6568,9 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
       attributesToSnippet: buildSnippetParam(t.snippetWords, t.snippetAttrs),
       ...s ? {
         facetFilters: s
+      } : {},
+      ...x.length ? {
+        numericFilters: x
       } : {}
     };
     return searchWithMiddleware(h, (y) => e.initIndex(i).search("", y)).then((y) => {

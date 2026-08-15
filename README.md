@@ -38,7 +38,9 @@ render via the complementary [wf-xano](https://github.com/the-starters/wf-xano) 
 - ✅ **Released & deployed**: tagged from `v1.0.4-re.0` (parity build) onward; fork-only
   features continue upstream's numbering (starting with `v1.0.5`, which added
   `wf-algolia-format="short-name"`; `v1.0.7` adds `wf-algolia-format="decimal"` —
-  one-decimal number, e.g. `5` → `5.0`).
+  one-decimal number, e.g. `5` → `5.0`; `v1.0.14` adds
+  `wf-algolia-base-numeric-filter` — always-on numericFilters with relative-time
+  tokens, e.g. `"createdDate >= now-30d"` for a last-30-days browse/static list).
 
 ## Layout
 

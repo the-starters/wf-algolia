@@ -36,6 +36,8 @@ Other script options: `data-insights`, `data-insights-cookie`, `data-autocomplet
 | `wf-algolia-index="idx"` / `"a,b"` | Index (or merged list) for the section |
 | `wf-algolia-per-page` / `wf-algolia-hits-per-page` | Page size |
 | `wf-algolia-base-filter` | Always-on Algolia filter string for the section |
+| `wf-algolia-base-numeric-filter` | (1.0.14) Always-on Algolia `numericFilters` for the browse section or static list, comma-separated: `"createdDate >= now-30d, points > 100"`. Ops `>=` `<=` `!=` `>` `<` `=`; value is a number or `now[±N{s\|m\|h\|d\|w}]`, resolved at query time. Invisible to filter UI/URL-sync. |
+| `wf-algolia-base-numeric-filter-unit="s"` | (1.0.14) `now` tokens resolve to epoch **milliseconds** by default (Xano-native); set `"s"` for indexes that store epoch seconds. |
 | `wf-algolia-base-filter-resolve="leaf"` | **`facet-stat` only** (1.0.11): the base-filter value is a bare leaf name — resolve it to the full hierarchical facet value before querying (`Growth Marketing` → `Paid Media > Growth Marketing`). Skipped when the value already contains `" > "`. Vocabulary is fetched once per index+field and cached for the page. 0 matches warns / 2+ matches errors, and the authored text is left untouched. Ignored (with a warning) for any other value; `browse` / static lists are unaffected. |
 
 ## Card binding (inside templates)

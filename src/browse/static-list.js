@@ -2,6 +2,10 @@
 import { hideElement, showElement } from "../utils/dom.js";
 import { buildSnippetParam } from "../utils/snippet.js";
 import { readBaseFilter } from "../utils/base-filter.js";
+import {
+  readBaseNumericFilter,
+  resolveBaseNumericFilters,
+} from "../utils/base-numeric-filter.js";
 import { removeInjected, renderHits } from "../render/template.js";
 import { searchWithMiddleware } from "../api/public-api.js";
 import { findTemplateFor } from "../core/attributes.js";
@@ -44,6 +48,13 @@ function renderStaticList(e, t, n, r) {
         (warnedStaticBadFilter.add(r),
         console.warn(`[wf-algolia] static list ${y}`, r));
     }),
+    x = resolveBaseNumericFilters(
+      readBaseNumericFilter(r, "wf-algolia-base-numeric-filter", (y) => {
+        warnedStaticBadFilter.has(r) ||
+          (warnedStaticBadFilter.add(r),
+          console.warn(`[wf-algolia] static list ${y}`, r));
+      }),
+    ),
     c = parseInt(r.getAttribute("wf-algolia-per-page") || "", 10),
     m = Number.isNaN(c) || c <= 0 ? STATIC_DEFAULT_PER_PAGE : c,
     g = r.querySelector('[wf-algolia-element="loader"]'),
@@ -56,6 +67,11 @@ function renderStaticList(e, t, n, r) {
     ...(s
       ? {
           facetFilters: s,
+        }
+      : {}),
+    ...(x.length
+      ? {
+          numericFilters: x,
         }
       : {}),
   };
