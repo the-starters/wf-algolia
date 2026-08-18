@@ -7,6 +7,10 @@ import { reapplyShowMore } from "./show-more.js";
 import { applyFilterItemSort } from "./filter-sort.js";
 import { removeInjected } from "../render/template.js";
 import { findTemplateFor, getTemplateParent } from "../core/attributes.js";
+import {
+  ensureRenderingContent,
+  omitHiddenFacetValues,
+} from "./hidden-facet-values.js";
 var SFFV_DEFAULT_DEBOUNCE = 200,
   warnedNotSearchable = new WeakSet(),
   LOCAL_HIDDEN_ATTR = "data-wf-algolia-local-hidden";
@@ -181,7 +185,9 @@ export function initFilterSearch(e, t, n) {
                         facetFilters: w,
                       }
                     : {}),
-                });
+                }),
+                S = await ensureRenderingContent(e, c);
+              E.facetHits = omitHiddenFacetValues(s, E.facetHits, S);
               renderSffvEmpty(m, b, E.facetHits.length > 0);
               let T = findTemplateFor(r, t, "filter-template");
               if (g) {

@@ -115,6 +115,13 @@ element instead. The handler guards test the filter-item itself and do not walk
 ancestors, so inside a group-level disabled group the native inputs are still
 disabled but an input-less div/button item stays keyboard-activatable (known gap).
 
+### Hidden Facet Values (1.0.15)
+
+Dynamic Filter groups and typeahead omit values listed under Algolia Dashboard →
+Facet display → Hide for that facet (`renderingContent.facetOrdering.values[<facet>].hide`).
+Exact string match. Hits, cards, chips, URL restore, and static Webflow items are
+unchanged. Pin / remaining-sort / the Facet display drag list are not applied.
+
 ## Form Blocks (`<form>` claiming)
 
 Webflow wraps search boxes in a Form Block, and pressing Enter in one would submit

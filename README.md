@@ -33,14 +33,16 @@ render via the complementary [wf-xano](https://github.com/the-starters/wf-xano) 
 - ✅ **Behavior-verified**: rebuilt bundle is parity-identical to upstream 1.0.4 on the
   multi-index test harness (same `WfAlgolia` API surface, same injected clone counts,
   same search hits, same console output).
-- ✅ **Module split + rename**: done — `src/` is a 45-file module tree with all 343 top-level
+- ✅ **Module split + rename**: done — `src/` is a 46-file module tree with all 343 top-level
   symbols renamed per `docs/MODULE-MAP.md`.
 - ✅ **Versioned releases**: tags start at `v1.0.4-re.0` (parity build); fork-only
   features continue upstream's numbering (starting with `v1.0.5`, which added
   `wf-algolia-format="short-name"`; `v1.0.7` adds `wf-algolia-format="decimal"` —
   one-decimal number, e.g. `5` → `5.0`; package version `1.0.14` adds
   `wf-algolia-base-numeric-filter` — always-on numericFilters with relative-time
-  tokens, e.g. `"createdDate >= now-30d"` for a last-30-days browse/static list).
+  tokens, e.g. `"createdDate >= now-30d"` for a last-30-days browse/static list;
+  `v1.0.15` honors Hidden Facet Values from Facet display Hide in dynamic Filter
+  groups and typeahead).
 
 ## Layout
 
@@ -71,6 +73,7 @@ dist/                        rebuilt output — COMMITTED (jsDelivr serves it fr
   [`docs/attributes-quickref.md`](docs/attributes-quickref.md).
 - The public API includes `WfAlgolia.use({beforeSearch, afterSearch})` middleware —
   check whether a wanted feature is achievable there before patching the fork.
+- **Hidden Facet Values:** Facet display Hide (`renderingContent.facetOrdering.values[<facet>].hide`) is applied when populating dynamic Filter groups and typeahead. Exact match. Hits and cards are not hidden.
 
 ## Verification workflow
 
