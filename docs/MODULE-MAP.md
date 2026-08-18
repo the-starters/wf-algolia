@@ -347,6 +347,11 @@ Format: `minified` → `proposedName` — purpose.
 | `rr` | `toggleGroupsByFacetPresence` | Hide field-groups whose facet has no values and no active selection |
 | `ir` (1929) | `syncFacetCounts` | Same counts + disabled state + truncation guard as `syncDynamicFacetCounts`, plus group-count, on field/facet groups (static variant) |
 
+Fork-only sibling (v1.0.15, no upstream counterpart): `filters/hidden-facet-values.js` —
+`omitHiddenFacetValues` / `rememberRenderingContent` / `ensureRenderingContent` honor
+Algolia Facet display Hide (`renderingContent.facetOrdering.values[<facet>].hide`, exact
+match) when populating dynamic Filter groups and typeahead. Hits and cards are unchanged.
+
 ### 2.23 utils — base-filter parser (1894–1928)
 
 | Symbol | Proposed name | Purpose |
