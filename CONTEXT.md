@@ -25,3 +25,10 @@ Glossary only. No implementation details; those live in `docs/`.
 - **Staged vs applied** — in deferred groups a pick is *staged* (ticked, not
   yet querying) until committed, at which point it is *applied*. Cancel
   reverts staged picks. Ordering treats staged and applied identically.
+
+## Hidden Facet Values
+
+- **Hidden Facet Value** — a facet value listed under Algolia Facet display
+  Hide for that facet. Omitted from dynamic Filter groups and typeahead. Still
+  present on hits.
+  _Avoid_: hidden company, CSS hide, removed from index, not_needed

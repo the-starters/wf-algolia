@@ -1,10 +1,10 @@
-# wf-algolia 1.0.14 — Reconstructed Module Tree
+# wf-algolia 1.0.15 — Reconstructed Module Tree
 
 `src/app.carved.js` (5,861 lines, 273 top-level statements, 343 symbols) was
 physically split into 44 real ES modules per `docs/MODULE-MAP.md`. That split was pure
 move-and-wire: statement text is verbatim from the carved file; only `export` keywords
 and `import` declarations were added. Fork-only modules added since then bring the
-current tree to 45 files. Entry: `src/index.js` (side-effect IIFE-style entry — exports
+current tree to 46 files. Entry: `src/index.js` (side-effect IIFE-style entry — exports
 nothing; runs the init sequence inside `window.Webflow.push`).
 
 Equivalence was verified at the time of the split (1.0.4): an order-normalized line diff
@@ -40,6 +40,7 @@ landed in `src/` since, so today's `dist/` no longer matches the pre-split bundl
 | `src/filters/show-more.js` | 41 | `wf-algolia-limit` overflow toggle with text-more/less (selected items never fold in `selected-first` groups) |
 | `src/filters/filter-sort.js` | 112 | `wf-algolia-sort` item ordering (`selected-first`/`alpha`/`count`), load-time baseline order, FLIP hookup |
 | `src/filters/dynamic-filters.js` | 183 | Facet-value fetch + dynamic `wf-algolia-facet` group population, facet-count sync |
+| `src/filters/hidden-facet-values.js` | 40 | Hidden Facet Values: omit Facet display Hide (exact match) + per-index `renderingContent` cache |
 | `src/filters/filter-search.js` | 324 | SFFV typeahead (in-group + overlay) and local substring filter search |
 | `src/filters/filter-tags.js` | 143 | Active-filter chips (value + range), `wf-algolia-replace-field` display names |
 | `src/filters/range.js` | 81 | Range min/max inputs (Finsweet rangeslider compatible), bounds registry |
@@ -88,15 +89,15 @@ filters/show-more    → filters/filter-sort
 filters/filter-group → core/events, vendor/finsweet, utils/{dom,format}, core/filter-state,
                        filters/{hierarchy,filter-sort,show-more}, actions/filter-actions  ← cycle A
 actions/filter-actions → core/events, utils/{dom,format}, core/filter-state, filters/{hierarchy,
-                       filter-group, show-more, filter-sort}                ← cycle A
+                       filter-group, show-more, filter-sort, hidden-facet-values}  ← cycle A
 render/populate      → utils/{dom,sanitize,misc,format}
 render/template      → utils/{sanitize,misc,format}, insights/insights, render/populate
 render/detail        → utils/{dom,misc}, render/{populate,template}
 api/public-api       → core/{events,filter-state}, insights/insights, actions/filter-actions,
                        render/{populate,template}
-filters/dynamic-filters → utils/{dom,format}, core/filter-state, filters/{hierarchy,show-more,filter-sort},
+filters/dynamic-filters → utils/{dom,format}, core/filter-state, filters/{hierarchy,show-more,filter-sort,hidden-facet-values},
                        render/template, core/attributes
-filters/filter-search → utils/{dom,format,debounce}, core/filter-state, filters/{show-more,filter-sort},
+filters/filter-search → utils/{dom,format,debounce}, core/filter-state, filters/{show-more,filter-sort,hidden-facet-values},
                        render/template, core/attributes
 filters/filter-tags  → utils/format, core/filter-state, filters/{hierarchy,filter-group},
                        actions/filter-actions, render/template, core/attributes

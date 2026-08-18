@@ -7,9 +7,12 @@ import { reapplyShowMore } from "./show-more.js";
 import { applyFilterItemSort } from "./filter-sort.js";
 import { removeInjected } from "../render/template.js";
 import { cssEscape, findTemplateFor, getTemplateParent } from "../core/attributes.js";
+import {
+  omitHiddenFacetValues,
+  rememberRenderingContent,
+} from "./hidden-facet-values.js";
 export async function fetchFacetValues(e, t, n, r) {
-  let o = (
-    await e.initIndex(t).search("", {
+  let i = await e.initIndex(t).search("", {
       facets: [n],
       hitsPerPage: 0,
       ...(r && r.length > 0
@@ -17,11 +20,16 @@ export async function fetchFacetValues(e, t, n, r) {
             facetFilters: r,
           }
         : {}),
-    })
-  ).facets?.[n];
+    });
+  rememberRenderingContent(t, i.renderingContent);
+  let o = i.facets?.[n];
   return !o || Object.keys(o).length === 0
     ? []
-    : Object.entries(o).sort((l, s) => s[1] - l[1]);
+    : omitHiddenFacetValues(
+        n,
+        Object.entries(o).sort((l, s) => s[1] - l[1]),
+        i.renderingContent,
+      );
 }
 export async function fetchFacetsBatch(e, t, n, r) {
   let i = await e.initIndex(t).search("", {
@@ -33,15 +41,20 @@ export async function fetchFacetsBatch(e, t, n, r) {
             facetFilters: r,
           }
         : {}),
-    }),
-    o = new Map();
+    });
+  rememberRenderingContent(t, i.renderingContent);
+  let o = new Map();
   for (let l of n) {
     let s = i.facets?.[l];
     s &&
       Object.keys(s).length > 0 &&
       o.set(
         l,
-        Object.entries(s).sort((c, m) => m[1] - c[1]),
+        omitHiddenFacetValues(
+          l,
+          Object.entries(s).sort((c, m) => m[1] - c[1]),
+          i.renderingContent,
+        ),
       );
   }
   return o;

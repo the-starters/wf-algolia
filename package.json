@@ -1,13 +1,14 @@
 {
   "name": "@the-starters/wf-algolia",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Reverse-engineered fork of @candid-leap/wf-algolia (ISC) — attribute-driven Algolia search for Webflow.",
   "license": "ISC",
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
     "build": "esbuild src/index.js --bundle --format=iife --target=es2020 --banner:js=\"/* @the-starters/wf-algolia v$npm_package_version */\" --outfile=dist/index.js",
-    "build:min": "esbuild src/index.js --bundle --minify --format=iife --target=es2020 --banner:js=\"/* @the-starters/wf-algolia v$npm_package_version */\" --outfile=dist/index.min.js"
+    "build:min": "esbuild src/index.js --bundle --minify --format=iife --target=es2020 --banner:js=\"/* @the-starters/wf-algolia v$npm_package_version */\" --outfile=dist/index.min.js",
+    "test": "node --test src/filters/hidden-facet-values.test.js"
   },
   "dependencies": {
     "@algolia/client-search": "^4.27.0",

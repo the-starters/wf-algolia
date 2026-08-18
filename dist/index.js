@@ -1,4 +1,4 @@
-/* @the-starters/wf-algolia v1.0.14 */
+/* @the-starters/wf-algolia v1.0.15 */
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -2732,6 +2732,37 @@
     t && t();
   }
 
+  // src/filters/hidden-facet-values.js
+  var renderingContentByIndex = /* @__PURE__ */ new Map();
+  function facetValueName(entry) {
+    return Array.isArray(entry) ? entry[0] : entry?.value;
+  }
+  function omitHiddenFacetValues(facetName, entries, renderingContent) {
+    let hide = renderingContent?.facetOrdering?.values?.[facetName]?.hide;
+    if (!Array.isArray(hide) || hide.length === 0) return entries;
+    let hidden = new Set(hide);
+    return entries.filter((entry) => !hidden.has(facetValueName(entry)));
+  }
+  function rememberRenderingContent(indexName, renderingContent) {
+    if (indexName && renderingContent != null)
+      renderingContentByIndex.set(indexName, renderingContent);
+  }
+  function renderingContentForIndex(indexName) {
+    return renderingContentByIndex.get(indexName);
+  }
+  async function ensureRenderingContent(client, indexName) {
+    if (renderingContentByIndex.has(indexName))
+      return renderingContentByIndex.get(indexName);
+    let result = await client.initIndex(indexName).search("", {
+      hitsPerPage: 0
+    });
+    if (renderingContentByIndex.has(indexName))
+      return renderingContentByIndex.get(indexName);
+    if (result.renderingContent != null)
+      rememberRenderingContent(indexName, result.renderingContent);
+    return renderingContentByIndex.get(indexName);
+  }
+
   // src/actions/filter-actions.js
   function syncFilterDOM(e = FILTER_STATE) {
     document.querySelectorAll("[data-wf-algolia-staged]").forEach((t) => {
@@ -2774,13 +2805,17 @@
   function synthesizeMissingSelected(e, t, n) {
     if (e.getAttribute("wf-algolia-show-selected-missing") !== "true" || !t)
       return;
-    let r = n[t]?.values;
+    let r = n[t]?.values, facet = e.getAttribute("wf-algolia-facet") || t, indexName = e.getAttribute("wf-algolia-index") || e.closest("[wf-algolia-index]")?.getAttribute("wf-algolia-index") || document.querySelector("script[data-app-id]")?.getAttribute("data-index") || null, rc = renderingContentForIndex(indexName);
     if (e.querySelectorAll('[data-wf-algolia-synthesized="true"]').forEach((g) => {
       let u = g.getAttribute("wf-algolia-value") || "";
-      (!r || !r.has(u)) && g.remove();
+      (!r || !r.has(u) || omitHiddenFacetValues(facet, [[u, 0]], rc).length === 0) && g.remove();
     }), !r || r.size === 0)
       return;
-    let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')], o = new Set(i.map((g) => g.getAttribute("wf-algolia-value") || "")), l = [...r].filter((g) => !o.has(g));
+    let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')], o = new Set(i.map((g) => g.getAttribute("wf-algolia-value") || "")), l = omitHiddenFacetValues(
+      facet,
+      [...r].filter((g) => !o.has(g)).map((g) => [g, 0]),
+      rc
+    ).map(([g]) => g);
     if (l.length === 0) return;
     let s = e.querySelector('[wf-algolia-element="filter-template"]') || i[0] || null;
     if (!s) return;
@@ -3306,7 +3341,7 @@
   }
 
   // package.json
-  var version2 = "1.0.14";
+  var version2 = "1.0.15";
 
   // src/render/populate.js
   var warnedEmptyAlt = /* @__PURE__ */ new WeakSet();
@@ -3709,14 +3744,20 @@
 
   // src/filters/dynamic-filters.js
   async function fetchFacetValues(e, t, n, r) {
-    let o = (await e.initIndex(t).search("", {
+    let i = await e.initIndex(t).search("", {
       facets: [n],
       hitsPerPage: 0,
       ...r && r.length > 0 ? {
         facetFilters: r
       } : {}
-    })).facets?.[n];
-    return !o || Object.keys(o).length === 0 ? [] : Object.entries(o).sort((l, s) => s[1] - l[1]);
+    });
+    rememberRenderingContent(t, i.renderingContent);
+    let o = i.facets?.[n];
+    return !o || Object.keys(o).length === 0 ? [] : omitHiddenFacetValues(
+      n,
+      Object.entries(o).sort((l, s) => s[1] - l[1]),
+      i.renderingContent
+    );
   }
   async function fetchFacetsBatch(e, t, n, r) {
     let i = await e.initIndex(t).search("", {
@@ -3726,12 +3767,18 @@
       ...r && r.length > 0 ? {
         facetFilters: r
       } : {}
-    }), o = /* @__PURE__ */ new Map();
+    });
+    rememberRenderingContent(t, i.renderingContent);
+    let o = /* @__PURE__ */ new Map();
     for (let l of n) {
       let s = i.facets?.[l];
       s && Object.keys(s).length > 0 && o.set(
         l,
-        Object.entries(s).sort((c, m) => m[1] - c[1])
+        omitHiddenFacetValues(
+          l,
+          Object.entries(s).sort((c, m) => m[1] - c[1]),
+          i.renderingContent
+        )
       );
     }
     return o;
@@ -3949,7 +3996,8 @@
               ...w ? {
                 facetFilters: w
               } : {}
-            });
+            }), S = await ensureRenderingContent(e, c);
+            E.facetHits = omitHiddenFacetValues(s, E.facetHits, S);
             renderSffvEmpty(m, b, E.facetHits.length > 0);
             let T = findTemplateFor(r, t, "filter-template");
             if (g) {
