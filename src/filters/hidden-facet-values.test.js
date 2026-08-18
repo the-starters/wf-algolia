@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { omitHiddenFacetValues } from "./hidden-facet-values.js";
+import {
+  ensureRenderingContent,
+  omitHiddenFacetValues,
+  rememberRenderingContent,
+} from "./hidden-facet-values.js";
 
 const COMPANY = "work-history.company";
 const hideCompany = {
@@ -95,4 +99,29 @@ test("omits Hidden Facet Values from typeahead hits", () => {
     { value: "Google", count: 40 },
     { value: "Self-employed", count: 4 },
   ]);
+});
+
+test("keeps a cached Hide list when a later search omits renderingContent", async () => {
+  const indexName = "idx-hide-race";
+  let release;
+  const hung = new Promise((resolve) => {
+    release = resolve;
+  });
+  const client = {
+    initIndex() {
+      return {
+        search() {
+          return hung;
+        },
+      };
+    },
+  };
+  const pending = ensureRenderingContent(client, indexName);
+  rememberRenderingContent(indexName, hideCompany);
+  release({ renderingContent: undefined });
+  const result = await pending;
+  assert.deepEqual(
+    omitHiddenFacetValues(COMPANY, [["Freelance", 12]], result),
+    [],
+  );
 });

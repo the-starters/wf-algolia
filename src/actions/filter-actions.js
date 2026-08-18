@@ -7,6 +7,10 @@ import { applyParentEmptyBehavior, getAllChildLinks } from "../filters/hierarchy
 import { applyActiveLabelClasses, syncWebflowInputVisual } from "../filters/filter-group.js";
 import { reapplyShowMore } from "../filters/show-more.js";
 import { applyFilterItemSort } from "../filters/filter-sort.js";
+import {
+  omitHiddenFacetValues,
+  renderingContentForIndex,
+} from "../filters/hidden-facet-values.js";
 export function syncFilterDOM(e = FILTER_STATE) {
   (document.querySelectorAll("[data-wf-algolia-staged]").forEach((t) => {
     t.removeAttribute("data-wf-algolia-staged");
@@ -85,18 +89,32 @@ export function syncFilterDOM(e = FILTER_STATE) {
 function synthesizeMissingSelected(e, t, n) {
   if (e.getAttribute("wf-algolia-show-selected-missing") !== "true" || !t)
     return;
-  let r = n[t]?.values;
+  let r = n[t]?.values,
+    facet = e.getAttribute("wf-algolia-facet") || t,
+    indexName =
+      e.getAttribute("wf-algolia-index") ||
+      e.closest("[wf-algolia-index]")?.getAttribute("wf-algolia-index") ||
+      document.querySelector("script[data-app-id]")?.getAttribute("data-index") ||
+      null,
+    rc = renderingContentForIndex(indexName);
   if (
     (e.querySelectorAll('[data-wf-algolia-synthesized="true"]').forEach((g) => {
       let u = g.getAttribute("wf-algolia-value") || "";
-      (!r || !r.has(u)) && g.remove();
+      (!r ||
+        !r.has(u) ||
+        omitHiddenFacetValues(facet, [[u, 0]], rc).length === 0) &&
+        g.remove();
     }),
     !r || r.size === 0)
   )
     return;
   let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')],
     o = new Set(i.map((g) => g.getAttribute("wf-algolia-value") || "")),
-    l = [...r].filter((g) => !o.has(g));
+    l = omitHiddenFacetValues(
+      facet,
+      [...r].filter((g) => !o.has(g)).map((g) => [g, 0]),
+      rc,
+    ).map(([g]) => g);
   if (l.length === 0) return;
   let s =
     e.querySelector('[wf-algolia-element="filter-template"]') || i[0] || null;

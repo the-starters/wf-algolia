@@ -2732,6 +2732,37 @@
     t && t();
   }
 
+  // src/filters/hidden-facet-values.js
+  var renderingContentByIndex = /* @__PURE__ */ new Map();
+  function facetValueName(entry) {
+    return Array.isArray(entry) ? entry[0] : entry?.value;
+  }
+  function omitHiddenFacetValues(facetName, entries, renderingContent) {
+    let hide = renderingContent?.facetOrdering?.values?.[facetName]?.hide;
+    if (!Array.isArray(hide) || hide.length === 0) return entries;
+    let hidden = new Set(hide);
+    return entries.filter((entry) => !hidden.has(facetValueName(entry)));
+  }
+  function rememberRenderingContent(indexName, renderingContent) {
+    if (indexName && renderingContent != null)
+      renderingContentByIndex.set(indexName, renderingContent);
+  }
+  function renderingContentForIndex(indexName) {
+    return renderingContentByIndex.get(indexName);
+  }
+  async function ensureRenderingContent(client, indexName) {
+    if (renderingContentByIndex.has(indexName))
+      return renderingContentByIndex.get(indexName);
+    let result = await client.initIndex(indexName).search("", {
+      hitsPerPage: 0
+    });
+    if (renderingContentByIndex.has(indexName))
+      return renderingContentByIndex.get(indexName);
+    if (result.renderingContent != null)
+      rememberRenderingContent(indexName, result.renderingContent);
+    return renderingContentByIndex.get(indexName);
+  }
+
   // src/actions/filter-actions.js
   function syncFilterDOM(e = FILTER_STATE) {
     document.querySelectorAll("[data-wf-algolia-staged]").forEach((t) => {
@@ -2774,13 +2805,17 @@
   function synthesizeMissingSelected(e, t, n) {
     if (e.getAttribute("wf-algolia-show-selected-missing") !== "true" || !t)
       return;
-    let r = n[t]?.values;
+    let r = n[t]?.values, facet = e.getAttribute("wf-algolia-facet") || t, indexName = e.getAttribute("wf-algolia-index") || e.closest("[wf-algolia-index]")?.getAttribute("wf-algolia-index") || document.querySelector("script[data-app-id]")?.getAttribute("data-index") || null, rc = renderingContentForIndex(indexName);
     if (e.querySelectorAll('[data-wf-algolia-synthesized="true"]').forEach((g) => {
       let u = g.getAttribute("wf-algolia-value") || "";
-      (!r || !r.has(u)) && g.remove();
+      (!r || !r.has(u) || omitHiddenFacetValues(facet, [[u, 0]], rc).length === 0) && g.remove();
     }), !r || r.size === 0)
       return;
-    let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')], o = new Set(i.map((g) => g.getAttribute("wf-algolia-value") || "")), l = [...r].filter((g) => !o.has(g));
+    let i = [...e.querySelectorAll('[wf-algolia-element="filter-item"]')], o = new Set(i.map((g) => g.getAttribute("wf-algolia-value") || "")), l = omitHiddenFacetValues(
+      facet,
+      [...r].filter((g) => !o.has(g)).map((g) => [g, 0]),
+      rc
+    ).map(([g]) => g);
     if (l.length === 0) return;
     let s = e.querySelector('[wf-algolia-element="filter-template"]') || i[0] || null;
     if (!s) return;
@@ -3705,32 +3740,6 @@
       }
       return `${n.field}${n.op}${r}`;
     });
-  }
-
-  // src/filters/hidden-facet-values.js
-  var renderingContentByIndex = /* @__PURE__ */ new Map();
-  function facetValueName(entry) {
-    return Array.isArray(entry) ? entry[0] : entry?.value;
-  }
-  function omitHiddenFacetValues(facetName, entries, renderingContent) {
-    let hide = renderingContent?.facetOrdering?.values?.[facetName]?.hide;
-    if (!Array.isArray(hide) || hide.length === 0) return entries;
-    let hidden = new Set(hide);
-    return entries.filter((entry) => !hidden.has(facetValueName(entry)));
-  }
-  function rememberRenderingContent(indexName, renderingContent) {
-    if (indexName && renderingContent != null)
-      renderingContentByIndex.set(indexName, renderingContent);
-  }
-  async function ensureRenderingContent(client, indexName) {
-    if (renderingContentByIndex.has(indexName))
-      return renderingContentByIndex.get(indexName);
-    let result = await client.initIndex(indexName).search("", {
-      hitsPerPage: 0
-    });
-    let content = result.renderingContent ?? {};
-    rememberRenderingContent(indexName, content);
-    return content;
   }
 
   // src/filters/dynamic-filters.js

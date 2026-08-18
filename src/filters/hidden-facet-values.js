@@ -18,13 +18,19 @@ export function rememberRenderingContent(indexName, renderingContent) {
     renderingContentByIndex.set(indexName, renderingContent);
 }
 
+export function renderingContentForIndex(indexName) {
+  return renderingContentByIndex.get(indexName);
+}
+
 export async function ensureRenderingContent(client, indexName) {
   if (renderingContentByIndex.has(indexName))
     return renderingContentByIndex.get(indexName);
   let result = await client.initIndex(indexName).search("", {
     hitsPerPage: 0,
   });
-  let content = result.renderingContent ?? {};
-  rememberRenderingContent(indexName, content);
-  return content;
+  if (renderingContentByIndex.has(indexName))
+    return renderingContentByIndex.get(indexName);
+  if (result.renderingContent != null)
+    rememberRenderingContent(indexName, result.renderingContent);
+  return renderingContentByIndex.get(indexName);
 }

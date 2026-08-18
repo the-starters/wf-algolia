@@ -89,7 +89,7 @@ filters/show-more    → filters/filter-sort
 filters/filter-group → core/events, vendor/finsweet, utils/{dom,format}, core/filter-state,
                        filters/{hierarchy,filter-sort,show-more}, actions/filter-actions  ← cycle A
 actions/filter-actions → core/events, utils/{dom,format}, core/filter-state, filters/{hierarchy,
-                       filter-group, show-more, filter-sort}                ← cycle A
+                       filter-group, show-more, filter-sort, hidden-facet-values}  ← cycle A
 render/populate      → utils/{dom,sanitize,misc,format}
 render/template      → utils/{sanitize,misc,format}, insights/insights, render/populate
 render/detail        → utils/{dom,misc}, render/{populate,template}
