@@ -3394,7 +3394,9 @@
     element.removeAttribute("data-srcset");
     element.src = String(sourceUrl || "");
     let srcsetBinding = element.getAttribute("wf-algolia-srcset"), xanoSrcset = buildXanoSrcset(element.src), srcset = "";
-    if (srcsetBinding === "xano" || srcsetBinding === null && xanoSrcset) {
+    if (srcsetBinding === "off") {
+      srcset = "";
+    } else if (srcsetBinding === "xano" || srcsetBinding === null && xanoSrcset) {
       srcset = xanoSrcset;
     } else if (srcsetBinding) {
       srcset = normalizeSrcset(resolveFallbackValue(hit, srcsetBinding));
