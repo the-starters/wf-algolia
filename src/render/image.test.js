@@ -186,7 +186,7 @@ test("supports an explicit opt-out for a Xano image", () => {
 
   applyImageSource(
     image,
-    {},
+    { off: "https://images.test/unexpected-800.webp 800w" },
     "https://x08a.example.n7c.xano.io/vault/abc/profile.jpg",
   );
 
