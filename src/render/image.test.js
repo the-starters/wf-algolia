@@ -14,6 +14,10 @@ class FakeImage {
     return this.attributes.has(name) ? this.attributes.get(name) : null;
   }
 
+  hasAttribute(name) {
+    return this.attributes.has(name);
+  }
+
   setAttribute(name, value) {
     this.attributes.set(name, String(value));
   }
@@ -100,10 +104,34 @@ test("automatically applies Xano candidates with concrete auto sizes", () => {
   assert.equal(automatic.loading, "lazy");
 });
 
+test("preserves an authored empty sizes attribute", () => {
+  let image = new FakeImage({ sizes: "" });
+
+  applyImageSource(
+    image,
+    {},
+    "https://x08a.example.n7c.xano.io/vault/abc/profile.jpg",
+  );
+
+  assert.equal(image.getAttribute("sizes"), "");
+});
+
 test("rejects unsafe or malformed responsive candidates", () => {
   assert.equal(normalizeSrcset("javascript:alert(1) 500w"), "");
   assert.equal(normalizeSrcset("https://images.test/a.jpg nope"), "");
   assert.equal(buildXanoSrcset("https://images.test/profile.jpg"), "");
+});
+
+test("rejects invalid descriptor sets", () => {
+  for (let srcset of [
+    "https://images.test/a.jpg 0w",
+    "https://images.test/a.jpg 0x",
+    "https://images.test/a.jpg 360w, https://images.test/b.jpg 360w",
+    "https://images.test/a.jpg 1x, https://images.test/b.jpg 1.0x",
+    "https://images.test/a.jpg 360w, https://images.test/b.jpg 2x",
+  ]) {
+    assert.equal(normalizeSrcset(srcset), "");
+  }
 });
 
 test("clears an earlier dynamic srcset when repeated data is empty", () => {
