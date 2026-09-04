@@ -42,14 +42,14 @@ render via the complementary [wf-xano](https://github.com/the-starters/wf-xano) 
   `wf-algolia-base-numeric-filter` — always-on numericFilters with relative-time
   tokens, e.g. `"createdDate >= now-30d"` for a last-30-days browse/static list;
   `v1.0.15` honors Hidden Facet Values from Facet display Hide in dynamic Filter
-  groups and typeahead).
+  groups and typeahead; `v1.0.16` adds responsive Xano image candidates).
 
 ## Layout
 
 ```
 build/index.1.0.4.min.js     upstream 1.0.4 dist, byte-for-byte (behavioral reference — never edit)
 build/index.1.0.4.pretty.js  prettified copy (line numbers referenced by docs)
-src/                         deobfuscated 46-file module tree (mirrors upstream's documented layout; fork-only modules extra)
+src/                         deobfuscated 47-file module tree (mirrors upstream's documented layout; fork-only modules extra)
 docs/public-api.d.ts         upstream-published types for window.WfAlgolia (rich JSDoc)
 docs/upstream-package.json   upstream package.json (deps, build scripts)
 docs/MODULE-MAP.md           line-range → original-module map + symbol rename tables
@@ -110,6 +110,9 @@ layout width, with a conservative fallback for older browsers. When no dynamic
 srcset contract is present, wf-algolia removes the Webflow placeholder's srcset
 because those URLs do not belong to the Algolia hit.
 
+Field-bound candidate lists are applied only when the complete `srcset` value
+passes URL and descriptor validation; an invalid list is removed as a whole.
+
 Set `wf-algolia-srcset="off"` to opt a specific Xano image out of automatic
 responsive candidates.
 
@@ -118,7 +121,7 @@ responsive candidates.
 The pages in [`examples/`](examples/) already load `../dist/index.js`, so they exercise
 whatever you just built — no copying, no separate harness.
 
-1. `npm test` — Hidden Facet Values helper (Node test runner).
+1. `npm test` — all Node regression tests.
 2. `npm run build && npm run build:min`
 3. Serve the **repo root** (the pages reach up to `../dist/`, so serving `examples/`
    itself will 404 the bundle): `python3 -m http.server 8000`, then open
