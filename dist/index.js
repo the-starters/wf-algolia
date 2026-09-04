@@ -3392,8 +3392,7 @@
   function applyImageSource(element, hit, sourceUrl) {
     element.removeAttribute("data-src");
     element.removeAttribute("data-srcset");
-    let safeSource = sanitizeUrl(String(sourceUrl || ""));
-    element.src = safeSource === "#" ? "" : safeSource;
+    element.src = String(sourceUrl || "");
     let srcsetBinding = element.getAttribute("wf-algolia-srcset"), xanoSrcset = buildXanoSrcset(element.src), srcset = "";
     if (srcsetBinding === "xano" || srcsetBinding === null && xanoSrcset) {
       srcset = xanoSrcset;
