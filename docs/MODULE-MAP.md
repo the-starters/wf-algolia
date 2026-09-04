@@ -290,7 +290,12 @@ Format: `minified` → `proposedName` — purpose.
 | Symbol | Proposed name | Purpose |
 |---|---|---|
 | `Mi` | `warnedEmptyAlt` | Warn-once set for images without `wf-algolia-alt` |
-| `Wt` | `populateCard` | Bind hit → card: text (fallback chains `a\|b`, highlight via `_highlightResult`), html (sanitized), snippet (`_snippetResult`), image (+alt/lazy), link (prefix/suffix/slugify/link-url), `wf-algolia-if` |
+| `Wt` | `populateCard` | Bind hit → card: text (fallback chains `a\|b`, highlight via `_highlightResult`), html (sanitized), snippet (`_snippetResult`), image (source handling delegated to `render/image.js`, plus alt), link (prefix/suffix/slugify/link-url), `wf-algolia-if` |
+
+Fork-only sibling (v1.0.16, no upstream counterpart): `render/image.js` centralizes
+normal-card and hit-preview image handling. It removes hit-unsafe placeholder
+candidates, validates bound `srcset` values, and derives Xano native fixed-width WebP
+candidates while preserving the original source fallback and authored `sizes`.
 
 ### 2.18 render/template.ts (1530–1602)
 
@@ -592,7 +597,7 @@ query time and merged in `browse.js` (`withBaseNumericFilters`) + `static-list.j
 | `$o` | `resolvePreviewIndex` | Index: own → ancestor → script `data-index` |
 | `Uo` | `findPreviewTemplate` | First child carrying/containing a bind attribute |
 | `Uc` | `fillLinkTemplate` | `{field.path}` interpolation for `wf-algolia-hit-link-template` |
-| `Bo` | `populatePreviewCard` | Flat (non-nested) text/image/link-template binder for preview cards |
+| `Bo` | `populatePreviewCard` | Flat (non-nested) text/image/link-template binder for preview cards; image source handling delegates to `render/image.js` |
 | `Bc` | `isInsideHitPreview` | closest hit-preview check |
 | `_o` | `clickTrapInstalled` | Idempotence flag |
 | `Gc` | `installClickTrap` | Capture-phase stopPropagation inside previews (keeps filter-group handlers out) |
