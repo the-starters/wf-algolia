@@ -56,7 +56,8 @@ test("removes a placeholder srcset when no dynamic binding is present", () => {
 
 test("preserves non-Xano data image sources", () => {
   let image = new FakeImage(),
-    source = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+    source =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
 
   applyImageSource(image, {}, source);
 
