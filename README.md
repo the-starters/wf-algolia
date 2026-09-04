@@ -33,7 +33,7 @@ render via the complementary [wf-xano](https://github.com/the-starters/wf-xano) 
 - ✅ **Behavior-verified**: rebuilt bundle is parity-identical to upstream 1.0.4 on the
   multi-index test harness (same `WfAlgolia` API surface, same injected clone counts,
   same search hits, same console output).
-- ✅ **Module split + rename**: done — `src/` is a 46-file module tree with all 343 top-level
+- ✅ **Module split + rename**: done — `src/` is a 47-file module tree with all 343 top-level
   symbols renamed per `docs/MODULE-MAP.md`.
 - ✅ **Versioned releases**: tags start at `v1.0.4-re.0` (parity build); fork-only
   features continue upstream's numbering (starting with `v1.0.5`, which added
