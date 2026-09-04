@@ -2,7 +2,12 @@
 import { hideElement, showElement } from "../utils/dom.js";
 import { sanitizeHtml, sanitizeUrl } from "../utils/sanitize.js";
 import { getPath } from "../utils/misc.js";
-import { applySlugifyAttr, evalCondition, formatValue } from "../utils/format.js";
+import {
+  applySlugifyAttr,
+  evalCondition,
+  formatValue,
+} from "../utils/format.js";
+import { applyImageSource } from "./image.js";
 var warnedEmptyAlt = new WeakSet();
 var warnedImgFallback = new WeakSet();
 export function populateCard(e, t, n) {
@@ -65,7 +70,17 @@ export function populateCard(e, t, n) {
     }),
     e.querySelectorAll("[wf-algolia-image], [wf-algolia-img]").forEach((l) => {
       try {
-        let s = (l.getAttribute("wf-algolia-image") ?? ((l.hasAttribute("wf-algolia-img") && !warnedImgFallback.has(l) && (warnedImgFallback.add(l), console.warn('[wf-algolia] "wf-algolia-img" is not a valid attribute - did you mean "wf-algolia-image"? Falling back to it for now.', l))), l.getAttribute("wf-algolia-img"))).split("|"),
+        let s = (
+            l.getAttribute("wf-algolia-image") ??
+            (l.hasAttribute("wf-algolia-img") &&
+              !warnedImgFallback.has(l) &&
+              (warnedImgFallback.add(l),
+              console.warn(
+                '[wf-algolia] "wf-algolia-img" is not a valid attribute - did you mean "wf-algolia-image"? Falling back to it for now.',
+                l,
+              )),
+            l.getAttribute("wf-algolia-img"))
+          ).split("|"),
           c = "";
         for (let u of s) {
           let h = getPath(t, u.trim());
@@ -74,10 +89,7 @@ export function populateCard(e, t, n) {
             break;
           }
         }
-        (l.removeAttribute("data-src"),
-          l.removeAttribute("data-srcset"),
-          l.removeAttribute("srcset"),
-          (l.src = c || ""));
+        applyImageSource(l, t, c);
         let m = l.getAttribute("wf-algolia-alt"),
           g = "";
         if (m !== null) {
