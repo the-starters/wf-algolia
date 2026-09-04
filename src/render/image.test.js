@@ -54,6 +54,16 @@ test("removes a placeholder srcset when no dynamic binding is present", () => {
   assert.equal(image.getAttribute("data-srcset"), null);
 });
 
+test("preserves non-Xano data image sources", () => {
+  let image = new FakeImage(),
+    source = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
+
+  applyImageSource(image, {}, source);
+
+  assert.equal(image.src, source);
+  assert.equal(image.getAttribute("srcset"), null);
+});
+
 test("binds a responsive srcset from an Algolia field and preserves sizes", () => {
   let image = new FakeImage({
     "wf-algolia-srcset": "missing|profile.srcset",
@@ -118,6 +128,7 @@ test("preserves an authored empty sizes attribute", () => {
 
 test("rejects unsafe or malformed responsive candidates", () => {
   assert.equal(normalizeSrcset("javascript:alert(1) 500w"), "");
+  assert.equal(normalizeSrcset("data:image/gif;base64,R0lGODlhAQAB 1x"), "");
   assert.equal(normalizeSrcset("https://images.test/a.jpg nope"), "");
   assert.equal(buildXanoSrcset("https://images.test/profile.jpg"), "");
 });
