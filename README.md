@@ -75,6 +75,44 @@ dist/                        rebuilt output — COMMITTED (jsDelivr serves it fr
   check whether a wanted feature is achievable there before patching the fork.
 - **Hidden Facet Values:** Facet display Hide (`renderingContent.facetOrdering.values[<facet>].hide`) is applied when populating dynamic Filter groups and typeahead. Exact match. Hits and cards are not hidden.
 
+## Responsive images
+
+Xano vault URLs bound through `wf-algolia-image` automatically receive a WebP
+`srcset`. No extra Algolia field or Webflow attribute is required. The value of
+`wf-algolia-srcset` can also name an Algolia field containing a complete
+`srcset` string:
+
+```html
+<img
+  wf-algolia-image="profile-photo"
+  wf-algolia-srcset="profile-photo-srcset"
+  sizes="(max-width: 479px) 92vw, 280px"
+/>
+```
+
+You can use the explicit `xano` value when documenting the template contract:
+
+```html
+<img
+  wf-algolia-image="profile-photo-xano|profile-photo"
+  wf-algolia-srcset="xano"
+  sizes="(max-width: 479px) 92vw, 280px"
+/>
+```
+
+Xano auto mode emits Xano's native WebP transformations at 32w, 50w, 160w,
+360w, 600w, and 800w. The generic `medium` template is intentionally excluded
+because its width varies with source aspect ratio and cannot use one valid `w`
+descriptor. The original JPEG remains in `src` as the fallback. An authored
+`sizes` value is preserved. When it is absent, wf-algolia uses `sizes="auto,
+360px"` with native lazy loading so the browser can use the element's concrete
+layout width, with a conservative fallback for older browsers. When no dynamic
+srcset contract is present, wf-algolia removes the Webflow placeholder's srcset
+because those URLs do not belong to the Algolia hit.
+
+Set `wf-algolia-srcset="off"` to opt a specific Xano image out of automatic
+responsive candidates.
+
 ## Verification workflow
 
 The pages in [`examples/`](examples/) already load `../dist/index.js`, so they exercise

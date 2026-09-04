@@ -48,6 +48,7 @@ Other script options: `data-insights`, `data-insights-cookie`, `data-autocomplet
 | `wf-algolia-html="field"` | Sanitized HTML |
 | `wf-algolia-snippet` / `wf-algolia-highlight="true"` | Algolia snippet/highlight variants |
 | `wf-algolia-image` / `wf-algolia-alt` | Image src / alt |
+| `wf-algolia-srcset` | Optional responsive candidates from an Algolia field, a `\|` fallback chain, explicit `xano`, or `off`. Xano vault sources automatically derive native WebP URLs from 32w through 800w. |
 | `wf-algolia-link="slug"` + `-prefix` / `-suffix` / `-folder` / `-slugify` / `-url` | Anchor href assembly |
 | `wf-algolia-format` | `rating` / `decimal` (v1.0.7+: `5` → `5.0`) / `year` / `currency` / `number` / `short-name` (v1.0.5+: `John Paul Dionisio` → `John P. D.`; shared vocabulary with wf-xano + quiz-results.js) |
 | `wf-algolia-if="expr"` | Conditional show: truthy field or `===`/`!==`/`>`/`>=`/`<`/`<=` comparison |

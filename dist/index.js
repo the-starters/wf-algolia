@@ -1,4 +1,4 @@
-/* @the-starters/wf-algolia v1.0.15 */
+/* @the-starters/wf-algolia v1.0.16 */
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -3341,7 +3341,80 @@
   }
 
   // package.json
-  var version2 = "1.0.15";
+  var version2 = "1.0.16";
+
+  // src/render/image.js
+  var autoSizedImages = /* @__PURE__ */ new WeakSet();
+  function resolveFallbackValue(hit, fields) {
+    for (let field of fields.split("|")) {
+      let value = getPath(hit, field.trim());
+      if (value != null && value !== "") return String(value);
+    }
+    return "";
+  }
+  function buildXanoSrcset(sourceUrl) {
+    try {
+      let url = new URL(sourceUrl), isXanoHost = url.hostname === "xano.io" || url.hostname.endsWith(".xano.io");
+      if (url.protocol !== "https:" || !isXanoHost || !url.pathname.includes("/vault/"))
+        return "";
+      return [
+        ["tiny", 32],
+        ["small", 50],
+        ["med", 160],
+        ["big", 360],
+        ["bigger", 600],
+        ["large", 800]
+      ].map(([template, width]) => {
+        let candidate = new URL(url);
+        candidate.searchParams.set("tpl", `${template}.webp`);
+        return `${candidate.toString()} ${width}w`;
+      }).join(", ");
+    } catch {
+      return "";
+    }
+  }
+  function normalizeSrcset(value) {
+    if (typeof value !== "string" || value.trim() === "") return "";
+    let candidates = value.split(",").map((candidate) => candidate.trim());
+    if (candidates.some((candidate) => candidate === "")) return "";
+    let normalized = [];
+    for (let candidate of candidates) {
+      let parts = candidate.split(/\s+/), url = sanitizeUrl(parts[0]), descriptor = parts[1] || "";
+      if (url === "#" || parts.length > 2 || descriptor !== "" && !/^(?:\d+(?:\.\d+)?x|\d+w)$/.test(descriptor))
+        return "";
+      normalized.push(descriptor ? `${url} ${descriptor}` : url);
+    }
+    return normalized.join(", ");
+  }
+  function applyImageSource(element, hit, sourceUrl) {
+    element.removeAttribute("data-src");
+    element.removeAttribute("data-srcset");
+    let safeSource = sanitizeUrl(String(sourceUrl || ""));
+    element.src = safeSource === "#" ? "" : safeSource;
+    let srcsetBinding = element.getAttribute("wf-algolia-srcset"), xanoSrcset = buildXanoSrcset(element.src), srcset = "";
+    if (srcsetBinding === "xano" || srcsetBinding === null && xanoSrcset) {
+      srcset = xanoSrcset;
+    } else if (srcsetBinding) {
+      srcset = normalizeSrcset(resolveFallbackValue(hit, srcsetBinding));
+    }
+    if (srcset) {
+      element.loading = "lazy";
+      if (/\s\d+w(?:,|$)/.test(srcset) && !element.getAttribute("sizes")) {
+        element.setAttribute("sizes", "auto, 360px");
+        autoSizedImages.add(element);
+      } else if (!/\s\d+w(?:,|$)/.test(srcset) && autoSizedImages.has(element)) {
+        element.removeAttribute("sizes");
+        autoSizedImages.delete(element);
+      }
+      element.setAttribute("srcset", srcset);
+    } else {
+      element.removeAttribute("srcset");
+      if (autoSizedImages.has(element)) {
+        element.removeAttribute("sizes");
+        autoSizedImages.delete(element);
+      }
+    }
+  }
 
   // src/render/populate.js
   var warnedEmptyAlt = /* @__PURE__ */ new WeakSet();
@@ -3390,7 +3463,10 @@
       }
     }), e.querySelectorAll("[wf-algolia-image], [wf-algolia-img]").forEach((l) => {
       try {
-        let s = (l.getAttribute("wf-algolia-image") ?? (l.hasAttribute("wf-algolia-img") && !warnedImgFallback.has(l) && (warnedImgFallback.add(l), console.warn('[wf-algolia] "wf-algolia-img" is not a valid attribute - did you mean "wf-algolia-image"? Falling back to it for now.', l)), l.getAttribute("wf-algolia-img"))).split("|"), c = "";
+        let s = (l.getAttribute("wf-algolia-image") ?? (l.hasAttribute("wf-algolia-img") && !warnedImgFallback.has(l) && (warnedImgFallback.add(l), console.warn(
+          '[wf-algolia] "wf-algolia-img" is not a valid attribute - did you mean "wf-algolia-image"? Falling back to it for now.',
+          l
+        )), l.getAttribute("wf-algolia-img"))).split("|"), c = "";
         for (let u of s) {
           let h = getPath(t, u.trim());
           if (h) {
@@ -3398,7 +3474,7 @@
             break;
           }
         }
-        l.removeAttribute("data-src"), l.removeAttribute("data-srcset"), l.removeAttribute("srcset"), l.src = c || "";
+        applyImageSource(l, t, c);
         let m = l.getAttribute("wf-algolia-alt"), g = "";
         if (m !== null) {
           if (m === "") g = "";
@@ -5709,7 +5785,7 @@ Verbatim Algolia error: ${E.message ?? "(no message)"}`));
           break;
         }
       }
-      r.removeAttribute("srcset"), r.removeAttribute("data-src"), r.removeAttribute("data-srcset"), r.src = o == null ? "" : String(o);
+      applyImageSource(r, t, o);
     });
     let n = [];
     e.hasAttribute("wf-algolia-hit-link-template") && n.push(e), e.querySelectorAll("[wf-algolia-hit-link-template]").forEach((r) => n.push(r));
