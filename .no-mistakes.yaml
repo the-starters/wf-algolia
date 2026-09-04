@@ -1,0 +1,2 @@
+# This repository has no GitHub Actions or other PR status-check provider.
+no_ci: true
