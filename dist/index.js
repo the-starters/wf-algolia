@@ -3377,11 +3377,14 @@
     if (typeof value !== "string" || value.trim() === "") return "";
     let candidates = value.split(",").map((candidate) => candidate.trim());
     if (candidates.some((candidate) => candidate === "")) return "";
-    let normalized = [];
+    let normalized = [], descriptorType = "", descriptorValues = /* @__PURE__ */ new Set();
     for (let candidate of candidates) {
-      let parts = candidate.split(/\s+/), url = sanitizeUrl(parts[0]), descriptor = parts[1] || "";
-      if (url === "#" || parts.length > 2 || descriptor !== "" && !/^(?:\d+(?:\.\d+)?x|\d+w)$/.test(descriptor))
-        return "";
+      let parts = candidate.split(/\s+/), url = sanitizeUrl(parts[0]), descriptor = parts[1] || "", widthMatch = descriptor.match(/^(\d+)w$/), densityMatch = descriptor.match(/^(\d+(?:\.\d+)?)x$/), currentType = widthMatch ? "w" : "x", descriptorValue = widthMatch ? Number(widthMatch[1]) : densityMatch ? Number(densityMatch[1]) : descriptor === "" ? 1 : 0;
+      if (url === "#" || parts.length > 2 || descriptorValue <= 0) return "";
+      if (descriptorType && descriptorType !== currentType) return "";
+      if (descriptorValues.has(descriptorValue)) return "";
+      descriptorType = currentType;
+      descriptorValues.add(descriptorValue);
       normalized.push(descriptor ? `${url} ${descriptor}` : url);
     }
     return normalized.join(", ");
@@ -3399,7 +3402,7 @@
     }
     if (srcset) {
       element.loading = "lazy";
-      if (/\s\d+w(?:,|$)/.test(srcset) && !element.getAttribute("sizes")) {
+      if (/\s\d+w(?:,|$)/.test(srcset) && !element.hasAttribute("sizes")) {
         element.setAttribute("sizes", "auto, 360px");
         autoSizedImages.add(element);
       } else if (!/\s\d+w(?:,|$)/.test(srcset) && autoSizedImages.has(element)) {
