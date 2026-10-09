@@ -1,4 +1,4 @@
-# wf-algolia 1.0.16 — Reconstructed Module Tree
+# wf-algolia 1.0.17 — Reconstructed Module Tree
 
 `src/app.carved.js` (5,861 lines, 273 top-level statements, 343 symbols) was
 physically split into 44 real ES modules per `docs/MODULE-MAP.md`. That split was pure
@@ -16,55 +16,55 @@ landed in `src/` since, so today's `dist/` no longer matches the pre-split bundl
 
 ## File list (one-line purpose)
 
-| File | Lines | Purpose |
-|---|---|---|
-| `src/index.js` | 70 | Entry: `handleFormBlocks` + `window.Webflow.push` init sequence (12+ init calls, `__sanitize` escape hatch, `ready` emit) |
-| `src/core/events.js` | 18 | Typed event bus: `on`/`off`/`emit` over a `Map<event, Set<handler>>` |
-| `src/core/filter-state.js` | 62 | `FILTER_STATE` + `STAGING_STATE` and their primitives; `stateToAlgoliaFilters` translation |
-| `src/core/attributes.js` | 70 | `scanAttributes` role map, template detach/anchor registry, `getCascadingAttr`, `cssEscape` |
-| `src/core/accessibility.js` | 38 | ARIA roles + keyboard handlers on inputs, listboxes, status regions, div filter-items |
-| `src/core/config.js` | 52 | `initClient` (algoliasearch singleton) + `initConfig` (script-tag `data-*` parsing) |
-| `src/vendor/finsweet.js` | 58 | Vendored `@finsweet/ts-utils` remnants: `WEBFLOW_CSS`, `getSiteId`, `restartWebflow` |
-| `src/utils/flip.js` | 63 | FLIP reorder transition helper (`canAnimateReorder`, `captureRects`, `playFlip`) |
-| `src/utils/dom.js` | 72 | `closeDropdownOnPick`, `showElement`/`hideElement` (`wf-algolia-display` aware), `disableFilterEl`/`enableFilterEl` (shared truly-disabled filter state) |
-| `src/utils/sanitize.js` | 69 | `sanitizeUrl` + `sanitizeHtml` (DOMParser tag/attr allowlist strip) |
-| `src/utils/misc.js` | 24 | `escapeFilterValue`, `getPath`, `slugify`, `restartIx2` |
-| `src/utils/format.js` | 87 | `{token}` interpolation, text-template caches, `wf-algolia-if` conditions, value formatters |
-| `src/utils/debounce.js` | 7 | Trailing debounce |
-| `src/utils/snippet.js` | 4 | `buildSnippetParam` (`attributesToSnippet` builder) |
-| `src/utils/base-filter.js` | 47 | `wf-algolia-base-filter`/`-filter` attribute parser (`field:value` forms), facet-filter pair splitter |
-| `src/utils/base-numeric-filter.js` | 96 | Always-on numeric-filter parser and query-time relative-time resolver for browse/static lists |
-| `src/insights/insights.js` | 174 | search-insights wiring: `initInsights`, delegated click/conversion listeners, `trackView`/`trackClick`/`trackConversion` |
-| `src/filters/hierarchy.js` | 200 | `wf-algolia-refines` hierarchy/cascade registry, ancestor/descendant walks, `when-parent-empty` behaviors, cached facet-vocabulary fetch + leaf lookup |
-| `src/filters/filter-group.js` | 582 | `initFilterGroups` (checkbox/radio/numeric-min, deferred apply), Webflow input visuals, active-label classes, `syncFacetCounts`, `initSelectFilters` |
-| `src/filters/show-more.js` | 41 | `wf-algolia-limit` overflow toggle with text-more/less (selected items never fold in `selected-first` groups) |
-| `src/filters/filter-sort.js` | 112 | `wf-algolia-sort` item ordering (`selected-first`/`alpha`/`count`), load-time baseline order, FLIP hookup |
-| `src/filters/dynamic-filters.js` | 183 | Facet-value fetch + dynamic `wf-algolia-facet` group population, facet-count sync |
-| `src/filters/hidden-facet-values.js` | 40 | Hidden Facet Values: omit Facet display Hide (exact match) + per-index `renderingContent` cache |
-| `src/filters/filter-search.js` | 324 | SFFV typeahead (in-group + overlay) and local substring filter search |
-| `src/filters/filter-tags.js` | 143 | Active-filter chips (value + range), `wf-algolia-replace-field` display names |
-| `src/filters/range.js` | 81 | Range min/max inputs (Finsweet rangeslider compatible), bounds registry |
-| `src/filters/standalone-filter-groups.js` | 373 | Filter-groups outside browse → navigation links, nested child re-scope, parent-change events |
-| `src/actions/filter-actions.js` | 311 | `syncFilterDOM`, selected-count/value renderers, `clearAllFilters`/`setFilter`/`setQuery`, staging commit/discard wrappers |
-| `src/render/populate.js` | 147 | `populateCard`: text/html/snippet/image/link/if binders (highlight inlined) |
-| `src/render/image.js` | 114 | Shared image source, dynamic `srcset`, Xano WebP candidate, `sizes`, and placeholder-cleanup handling |
-| `src/render/template.js` | 82 | `cloneAndPopulate`, `removeInjected`, template detach, `renderHits` (+IX2 restart, view tracking) |
-| `src/render/detail.js` | 95 | Detail-mode rendering (objectID from attr/path/query, slug lookup, array-item expansion) |
-| `src/api/public-api.js` | 89 | Middleware pipeline (`searchWithMiddleware`, `multiQueryWithMiddleware`) + `exposePublicAPI` (`window.WfAlgolia`) |
-| `src/browse/browse.js` | 580 | Main browse init: mode buttons, URL restore, base numeric filters, all filter subsystems, query dispatch (single/federated), static-list exclusion for shared-element targeting |
-| `src/browse/sort.js` | 136 | Sort groups/replica indexes, `?sort=` URL param, sort UI sync |
-| `src/browse/url-sync.js` | 185 | `?q/mode/page/f_*` state ↔ URL, `#wfa=` hash fallback >2000 chars |
-| `src/browse/static-list.js` | 105 | `wf-algolia-disable-filters="true"` one-shot static lists with base facet/numeric filters |
-| `src/pagination/infinite-scroll.js` | 27 | IntersectionObserver sentinel loader |
-| `src/pagination/numbered.js` | 100 | Numbered pagination controls, results-count/page-info templates (skips static-list-owned counts) |
-| `src/search/search.js` | 72 | Scoped single-index search-input |
-| `src/search/multi-search.js` | 154 | Merged (comma-separated index) and sectioned federated search |
-| `src/search/autocomplete.js` | 148 | Sectioned dropdown autocomplete with keyboard nav |
-| `src/elements/facet-stat.js` | 148 | `facet-stat` element (`facets_stats` min/max/avg/sum) |
-| `src/elements/hit-preview.js` | 426 | Eager batched hit previews (multipleQueries), click trap, re-scope refresh |
-| `src/recommend/recommend.js` | 94 | @algolia/recommend: 4 models rendered via `renderHits` |
-| `src/debug/rules.js` | 570 | 26 attribute-lint rule factories + `ALL_RULES` (21 rule ids) |
-| `src/debug/audit.js` | 120 | `runAudit`, dedupe/log plumbing, MutationObserver re-audit (`data-wf-algolia-debug` opt-in) |
+| File                                      | Lines | Purpose                                                                                                                                                                         |
+| ----------------------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/index.js`                            | 101   | Entry: `handleFormBlocks` + `window.Webflow.push` init sequence (12+ init calls, `__sanitize` escape hatch, `ready` emit)                                                       |
+| `src/core/events.js`                      | 18    | Typed event bus: `on`/`off`/`emit` over a `Map<event, Set<handler>>`                                                                                                            |
+| `src/core/filter-state.js`                | 79    | `FILTER_STATE` + `STAGING_STATE` and their primitives; `stateToAlgoliaFilters` translation                                                                                      |
+| `src/core/attributes.js`                  | 70    | `scanAttributes` role map, template detach/anchor registry, `getCascadingAttr`, `cssEscape`                                                                                     |
+| `src/core/accessibility.js`               | 38    | ARIA roles + keyboard handlers on inputs, listboxes, status regions, div filter-items                                                                                           |
+| `src/core/config.js`                      | 52    | `initClient` (algoliasearch singleton) + `initConfig` (script-tag `data-*` parsing)                                                                                             |
+| `src/vendor/finsweet.js`                  | 60    | Vendored `@finsweet/ts-utils` remnants: `WEBFLOW_CSS`, `getSiteId`, `restartWebflow`                                                                                            |
+| `src/utils/flip.js`                       | 63    | FLIP reorder transition helper (`canAnimateReorder`, `captureRects`, `playFlip`)                                                                                                |
+| `src/utils/dom.js`                        | 72    | `closeDropdownOnPick`, `showElement`/`hideElement` (`wf-algolia-display` aware), `disableFilterEl`/`enableFilterEl` (shared truly-disabled filter state)                        |
+| `src/utils/sanitize.js`                   | 69    | `sanitizeUrl` + `sanitizeHtml` (DOMParser tag/attr allowlist strip)                                                                                                             |
+| `src/utils/misc.js`                       | 24    | `escapeFilterValue`, `getPath`, `slugify`, `restartIx2`                                                                                                                         |
+| `src/utils/format.js`                     | 99    | `{token}` interpolation, text-template caches, `wf-algolia-if` conditions, value formatters                                                                                     |
+| `src/utils/debounce.js`                   | 7     | Trailing debounce                                                                                                                                                               |
+| `src/utils/snippet.js`                    | 4     | `buildSnippetParam` (`attributesToSnippet` builder)                                                                                                                             |
+| `src/utils/base-filter.js`                | 47    | `wf-algolia-base-filter`/`-filter` attribute parser (`field:value` forms), facet-filter pair splitter                                                                           |
+| `src/utils/base-numeric-filter.js`        | 96    | Always-on numeric-filter parser and query-time relative-time resolver for browse/static lists                                                                                   |
+| `src/insights/insights.js`                | 174   | search-insights wiring: `initInsights`, delegated click/conversion listeners, `trackView`/`trackClick`/`trackConversion`                                                        |
+| `src/filters/hierarchy.js`                | 200   | `wf-algolia-refines` hierarchy/cascade registry, ancestor/descendant walks, `when-parent-empty` behaviors, cached facet-vocabulary fetch + leaf lookup                          |
+| `src/filters/filter-group.js`             | 582   | `initFilterGroups` (checkbox/radio/numeric-min, deferred apply), Webflow input visuals, active-label classes, `syncFacetCounts`, `initSelectFilters`                            |
+| `src/filters/show-more.js`                | 41    | `wf-algolia-limit` overflow toggle with text-more/less (selected items never fold in `selected-first` groups)                                                                   |
+| `src/filters/filter-sort.js`              | 112   | `wf-algolia-sort` item ordering (`selected-first`/`alpha`/`count`), load-time baseline order, FLIP hookup                                                                       |
+| `src/filters/dynamic-filters.js`          | 196   | Facet-value fetch + dynamic `wf-algolia-facet` group population, facet-count sync                                                                                               |
+| `src/filters/hidden-facet-values.js`      | 36    | Hidden Facet Values: omit Facet display Hide (exact match) + per-index `renderingContent` cache                                                                                 |
+| `src/filters/filter-search.js`            | 330   | SFFV typeahead (in-group + overlay) and local substring filter search                                                                                                           |
+| `src/filters/filter-tags.js`              | 143   | Active-filter chips (value + range), `wf-algolia-replace-field` display names                                                                                                   |
+| `src/filters/range.js`                    | 81    | Range min/max inputs (Finsweet rangeslider compatible), bounds registry                                                                                                         |
+| `src/filters/standalone-filter-groups.js` | 373   | Filter-groups outside browse → navigation links, nested child re-scope, parent-change events                                                                                    |
+| `src/actions/filter-actions.js`           | 329   | `syncFilterDOM`, selected-count/value renderers, `clearAllFilters`/`setFilter`/`setQuery`, staging commit/discard wrappers                                                      |
+| `src/render/populate.js`                  | 147   | `populateCard`: text/html/snippet/image/link/if binders (highlight inlined)                                                                                                     |
+| `src/render/image.js`                     | 114   | Shared image source, dynamic `srcset`, Xano WebP candidate, `sizes`, and placeholder-cleanup handling                                                                           |
+| `src/render/template.js`                  | 82    | `cloneAndPopulate`, `removeInjected`, template detach, `renderHits` (+IX2 restart, view tracking)                                                                               |
+| `src/render/detail.js`                    | 95    | Detail-mode rendering (objectID from attr/path/query, slug lookup, array-item expansion)                                                                                        |
+| `src/api/public-api.js`                   | 93    | Middleware pipeline (`searchWithMiddleware`, `multiQueryWithMiddleware`) + `exposePublicAPI` (`window.WfAlgolia`)                                                               |
+| `src/browse/browse.js`                    | 580   | Main browse init: mode buttons, URL restore, base numeric filters, all filter subsystems, query dispatch (single/federated), static-list exclusion for shared-element targeting |
+| `src/browse/sort.js`                      | 136   | Sort groups/replica indexes, `?sort=` URL param, sort UI sync                                                                                                                   |
+| `src/browse/url-sync.js`                  | 185   | `?q/mode/page/f_*` state ↔ URL, `#wfa=` hash fallback >2000 chars                                                                                                               |
+| `src/browse/static-list.js`               | 105   | `wf-algolia-disable-filters="true"` one-shot static lists with base facet/numeric filters                                                                                       |
+| `src/pagination/infinite-scroll.js`       | 27    | IntersectionObserver sentinel loader                                                                                                                                            |
+| `src/pagination/numbered.js`              | 100   | Numbered pagination controls, results-count/page-info templates (skips static-list-owned counts)                                                                                |
+| `src/search/search.js`                    | 72    | Scoped single-index search-input                                                                                                                                                |
+| `src/search/multi-search.js`              | 154   | Merged (comma-separated index) and sectioned federated search                                                                                                                   |
+| `src/search/autocomplete.js`              | 148   | Sectioned dropdown autocomplete with keyboard nav                                                                                                                               |
+| `src/elements/facet-stat.js`              | 148   | `facet-stat` element (`facets_stats` min/max/avg/sum)                                                                                                                           |
+| `src/elements/hit-preview.js`             | 426   | Eager batched hit previews (multipleQueries), click trap, re-scope refresh                                                                                                      |
+| `src/recommend/recommend.js`              | 94    | @algolia/recommend: 4 models rendered via `renderHits`                                                                                                                          |
+| `src/debug/rules.js`                      | 570   | 26 attribute-lint rule factories + `ALL_RULES` (21 rule ids)                                                                                                                    |
+| `src/debug/audit.js`                      | 120   | `runAudit`, dedupe/log plumbing, MutationObserver re-audit (`data-wf-algolia-debug` opt-in)                                                                                     |
 
 ## Import graph (edges = `import ... from`)
 
@@ -149,7 +149,7 @@ reads `WEBFLOW_CSS` from `vendor/finsweet.js`), which is guaranteed by the direc
 
 ## Notes
 
-- `src/vendor/finsweet.js` still vendors the Finsweet ts-utils remnants verbatim — not yet
+- `src/vendor/finsweet.js` still vendors the Finsweet ts-utils remnants locally — not yet
   swapped for the `@finsweet/ts-utils` npm package.
 - Function-local minified params (`e`, `t`, `n`, …) are unchanged (next deobfuscation stage).
 - `handleFormBlocks` lives in `src/index.js` (docs place it in `index.ts`).

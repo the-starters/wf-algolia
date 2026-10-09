@@ -40,7 +40,11 @@ function webflowFixture(t, { mediaQueries, missingIxData = false } = {}) {
       },
     },
     actions: {
-      eventStateChanged: (key, value) => ({ type: "eventStateChanged", key, value }),
+      eventStateChanged: (key, value) => ({
+        type: "eventStateChanged",
+        key,
+        value,
+      }),
     },
     destroy() {
       calls.push(["ix2.destroy"]);
@@ -98,9 +102,10 @@ test("skips registered IX2 until the generated page imports mediaQueries", async
   // The next render can restart IX2 after the ordinary generated page import.
   fixture.state.ixData.mediaQueries = [{ key: "main", min: 992, max: 10000 }];
   await restartWebflow(["ix2"]);
-  assert.deepEqual(fixture.calls.filter(([name]) => name === "ix2.init"), [
-    ["ix2.init", []],
-  ]);
+  assert.deepEqual(
+    fixture.calls.filter(([name]) => name === "ix2.init"),
+    [["ix2.init", []]],
+  );
   assert.deepEqual(fixture.state.ixSession.eventState, originalEventState);
 });
 
@@ -119,15 +124,18 @@ test("skips malformed mediaQueries rather than treating it as readiness", async 
 for (const mediaQueries of [[], [{ key: "main", min: 992, max: 10000 }]]) {
   test(`restarts ready IX2 with ${mediaQueries.length} media queries and restores event state`, async (t) => {
     const fixture = webflowFixture(t, { mediaQueries });
-    const originalAuthoredData = globalThis.structuredClone(fixture.authoredData);
+    const originalAuthoredData = globalThis.structuredClone(
+      fixture.authoredData,
+    );
     const originalEventState = fixture.state.ixSession.eventState;
     const originalEntries = Object.entries(originalEventState);
 
     await restartWebflow(["ix2"]);
 
-    assert.deepEqual(fixture.calls.filter(([name]) => name === "ix2.init"), [
-      ["ix2.init", []],
-    ]);
+    assert.deepEqual(
+      fixture.calls.filter(([name]) => name === "ix2.init"),
+      [["ix2.init", []]],
+    );
     assert.equal(fixture.state.ixData, fixture.authoredData);
     assert.deepEqual(fixture.state.ixData, originalAuthoredData);
     assert.equal(fixture.state.ixData.mediaQueries, mediaQueries);
@@ -136,10 +144,19 @@ for (const mediaQueries of [[], [{ key: "main", min: 992, max: 10000 }]]) {
       assert.equal(fixture.state.ixSession.eventState[key], value);
     }
     assert.deepEqual(
-      fixture.calls.filter(([name]) => name === "dispatch").map(([, action]) => action),
-      originalEntries.map(([key, value]) => ({ type: "eventStateChanged", key, value })),
+      fixture.calls
+        .filter(([name]) => name === "dispatch")
+        .map(([, action]) => action),
+      originalEntries.map(([key, value]) => ({
+        type: "eventStateChanged",
+        key,
+        value,
+      })),
     );
-    assert.equal(fixture.calls.some(([name]) => name === "ix2.destroy"), false);
+    assert.equal(
+      fixture.calls.some(([name]) => name === "ix2.destroy"),
+      false,
+    );
   });
 }
 
@@ -155,7 +172,10 @@ test("unready IX2 does not skip requested commerce or other modules", async (t) 
   await restartWebflow(["ix2", "commerce", "lightbox", "slider", "tabs"]);
   assert.deepEqual(fixture.calls, [
     ["commerce.destroy"],
-    ["commerce.init", { siteId: "fixture-site", apiUrl: "https://render.webflow.com" }],
+    [
+      "commerce.init",
+      { siteId: "fixture-site", apiUrl: "https://render.webflow.com" },
+    ],
     ["lightbox.ready"],
     ["slider.redraw"],
     ["slider.ready"],
@@ -171,7 +191,10 @@ test("a full restart retains Webflow and commerce behavior when IX2 is unready",
     ["Webflow.destroy"],
     ["Webflow.ready"],
     ["commerce.destroy"],
-    ["commerce.init", { siteId: "fixture-site", apiUrl: "https://render.webflow.com" }],
+    [
+      "commerce.init",
+      { siteId: "fixture-site", apiUrl: "https://render.webflow.com" },
+    ],
     ["Webflow.push"],
   ]);
 });
@@ -195,12 +218,17 @@ for (const failureStage of ["initialization", "event-state restoration"]) {
   test(`restartIx2 catches rejected ${failureStage} and preserves its warning`, async (t) => {
     const fixture = webflowFixture(t, { mediaQueries: [] });
     const failure = new Error(`fixture ${failureStage} failure`);
-    if (failureStage === "initialization") fixture.ix2.init = () => { throw failure; };
+    if (failureStage === "initialization")
+      fixture.ix2.init = () => {
+        throw failure;
+      };
     else fixture.ix2.store.dispatch = () => Promise.reject(failure);
     const warnings = [];
     const previousWarn = console.warn;
     console.warn = (...args) => warnings.push(args);
-    t.after(() => { console.warn = previousWarn; });
+    t.after(() => {
+      console.warn = previousWarn;
+    });
 
     await assert.doesNotReject(async () => restartIx2());
 
