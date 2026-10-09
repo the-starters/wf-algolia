@@ -42,7 +42,9 @@ render via the complementary [wf-xano](https://github.com/the-starters/wf-xano) 
   `wf-algolia-base-numeric-filter` — always-on numericFilters with relative-time
   tokens, e.g. `"createdDate >= now-30d"` for a last-30-days browse/static list;
   `v1.0.15` honors Hidden Facet Values from Facet display Hide in dynamic Filter
-  groups and typeahead; `v1.0.16` adds responsive Xano image candidates).
+  groups and typeahead; `v1.0.16` adds responsive Xano image candidates;
+  `v1.0.17` skips premature Webflow IX2 restarts until the page imports its
+  interaction configuration, and catches asynchronous restart failures).
 
 ## Layout
 
@@ -63,10 +65,10 @@ dist/                        rebuilt output — COMMITTED (jsDelivr serves it fr
 - Upstream repo `Candid-leap/webflow-algolia-app` is **private**; npm ships only the
   minified dist + `index.d.ts`. This folder is reconstructed from dist + public docs.
 - Original module tree is known from doc references: `src/{index, core/{attributes,events},
-  api/public-api, search/{search,multi-search,autocomplete}, browse/browse,
-  filters/{filter-group,filter-search,range,filter-tags,dynamic-filters,standalone-filter-groups},
-  actions/filter-actions, pagination/{numbered,load-more,infinite-scroll},
-  render/{template,populate,detail}, recommend/recommend, elements/hit-preview, utils/sanitize}`.
+api/public-api, search/{search,multi-search,autocomplete}, browse/browse,
+filters/{filter-group,filter-search,range,filter-tags,dynamic-filters,standalone-filter-groups},
+actions/filter-actions, pagination/{numbered,load-more,infinite-scroll},
+render/{template,populate,detail}, recommend/recommend, elements/hit-preview, utils/sanitize}`.
 - Full attribute/feature documentation lives upstream at
   https://wf-algolia-docs.candidleap.com/ (their docs stay valid for our fork as long
   as we keep the attribute grammar); the condensed local copy is

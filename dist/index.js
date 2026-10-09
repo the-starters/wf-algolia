@@ -1,4 +1,4 @@
-/* @the-starters/wf-algolia v1.0.16 */
+/* @the-starters/wf-algolia v1.0.17 */
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -2199,7 +2199,7 @@
     if (!(!t || !("destroy" in t) || !("ready" in t) || !("require" in t)) && !(e && !e.length)) {
       if (e || (t.destroy(), t.ready()), !e || e.includes("ix2")) {
         let n = t.require("ix2");
-        if (n) {
+        if (n && Array.isArray(n.store.getState().ixData?.mediaQueries)) {
           let { store: r, actions: i } = n, { eventState: o } = r.getState().ixSession, l = Object.entries(o);
           e || n.destroy(), n.init(), await Promise.all(
             l.map((s) => r.dispatch(i.eventStateChanged(...s)))
@@ -2280,9 +2280,9 @@
   function slugify(e, t = "-") {
     return e.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/ /g, t);
   }
-  function restartIx2() {
+  async function restartIx2() {
     try {
-      restartWebflow(["ix2"]);
+      await restartWebflow(["ix2"]);
     } catch (e) {
       console.warn("[wf-algolia] Could not restart Webflow interactions:", e);
     }
@@ -3341,7 +3341,7 @@
   }
 
   // package.json
-  var version2 = "1.0.16";
+  var version2 = "1.0.17";
 
   // src/render/image.js
   var autoSizedImages = /* @__PURE__ */ new WeakSet();
