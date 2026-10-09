@@ -42,7 +42,9 @@ render via the complementary [wf-xano](https://github.com/the-starters/wf-xano) 
   `wf-algolia-base-numeric-filter` — always-on numericFilters with relative-time
   tokens, e.g. `"createdDate >= now-30d"` for a last-30-days browse/static list;
   `v1.0.15` honors Hidden Facet Values from Facet display Hide in dynamic Filter
-  groups and typeahead; `v1.0.16` adds responsive Xano image candidates).
+  groups and typeahead; `v1.0.16` adds responsive Xano image candidates;
+  `v1.0.17` skips premature Webflow IX2 restarts until the page imports its
+  interaction configuration, and catches asynchronous restart failures).
 
 ## Layout
 

@@ -15,9 +15,9 @@ export function slugify(e, t = "-") {
     .trim()
     .replace(/ /g, t);
 }
-export function restartIx2() {
+export async function restartIx2() {
   try {
-    restartWebflow(["ix2"]);
+    await restartWebflow(["ix2"]);
   } catch (e) {
     console.warn("[wf-algolia] Could not restart Webflow interactions:", e);
   }

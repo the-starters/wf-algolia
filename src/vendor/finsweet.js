@@ -21,7 +21,9 @@ export var restartWebflow = async (e) => {
   ) {
     if ((e || (t.destroy(), t.ready()), !e || e.includes("ix2"))) {
       let n = t.require("ix2");
-      if (n) {
+      // IX2 registration can precede the generated page's data import. A
+      // no-argument init needs the imported mediaQueries array, even if empty.
+      if (n && Array.isArray(n.store.getState().ixData?.mediaQueries)) {
         let { store: r, actions: i } = n,
           { eventState: o } = r.getState().ixSession,
           l = Object.entries(o);
