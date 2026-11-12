@@ -34,12 +34,17 @@ export function applyUniqueGroups(card) {
   let groups = new Map();
   for (let element of card.querySelectorAll("[wf-algolia-unique]")) {
     try {
-      // A previous populate of this same node may have hidden it. Elements
-      // with wf-algolia-if were already re-evaluated by the caller; restore
-      // only the ones nothing else controls.
+      // A previous populate of this same node may have hidden it. The text
+      // pass already set display for wf-algolia-format elements and the
+      // caller re-evaluated wf-algolia-if; restore only the ones nothing else
+      // controls.
       if (element.hasAttribute(HIDDEN_MARK)) {
         element.removeAttribute(HIDDEN_MARK);
-        if (!element.hasAttribute("wf-algolia-if")) showElement(element, "");
+        if (
+          !element.hasAttribute("wf-algolia-if") &&
+          !element.hasAttribute("wf-algolia-format")
+        )
+          showElement(element, "");
       }
       if (element.style?.display === "none") continue;
       if (!normalizeText(element.textContent)) continue;

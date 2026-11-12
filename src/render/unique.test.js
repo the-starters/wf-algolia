@@ -169,6 +169,28 @@ test("an element without wf-algolia-if is shown again when a later hit has no du
   assert.equal(second.style.display, "inline");
 });
 
+test("a formatted slot hidden as a duplicate stays hidden when its next value formats to empty", () => {
+  let first = new FakeElement({
+      "wf-algolia-text": "a",
+      "wf-algolia-unique": "g",
+    }),
+    second = new FakeElement({
+      "wf-algolia-text": "b",
+      "wf-algolia-unique": "g",
+      "wf-algolia-format": "year",
+    }),
+    card = new FakeCard([first, second]);
+
+  populateCard(card, { a: "2020", b: "2020" });
+  assert.deepEqual(visibleText(card), ["2020"]);
+  assert.equal(second.style.display, "none");
+
+  populateCard(card, { a: "One", b: "not a date" });
+  assert.equal(second.textContent, "");
+  assert.equal(second.style.display, "none");
+  assert.deepEqual(visibleText(card), ["One"]);
+});
+
 test("empty slots are not treated as duplicates of each other", () => {
   let card = companyCard(UNIQUE);
 

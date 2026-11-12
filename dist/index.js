@@ -3432,7 +3432,8 @@
       try {
         if (element.hasAttribute(HIDDEN_MARK)) {
           element.removeAttribute(HIDDEN_MARK);
-          if (!element.hasAttribute("wf-algolia-if")) showElement(element, "");
+          if (!element.hasAttribute("wf-algolia-if") && !element.hasAttribute("wf-algolia-format"))
+            showElement(element, "");
         }
         if (element.style?.display === "none") continue;
         if (!normalizeText(element.textContent)) continue;
