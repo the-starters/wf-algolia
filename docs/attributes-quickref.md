@@ -53,6 +53,7 @@ Other script options: `data-insights`, `data-insights-cookie`, `data-autocomplet
 | `wf-algolia-format` | `rating` / `decimal` (v1.0.7+: `5` → `5.0`) / `year` / `currency` / `number` / `short-name` (v1.0.5+: `John Paul Dionisio` → `John P. D.`; shared vocabulary with wf-xano + quiz-results.js) |
 | `wf-algolia-if="expr"` | Conditional show: truthy field or `===`/`!==`/`>`/`>=`/`<`/`<=` comparison |
 | `wf-algolia-display="flex"` | display value used when showing (default `block`) |
+| `wf-algolia-unique="group"` | (1.0.18) Per card: text elements in `group` show each value once (case and whitespace ignored, first spelling wins). Distinct values move up into the earliest visible slots and leftover slots are emptied **and** hidden, so sibling/`:empty` comma CSS stays correct. Use on text-only slots, for example the three `work-history.N.company` tags on the expert card with `wf-algolia-unique="companies"`. |
 
 Injected clones get class `wf-algolia-injected` and `data-wf-algolia-hit-objectid`.
 

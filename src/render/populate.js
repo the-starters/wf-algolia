@@ -8,6 +8,7 @@ import {
   formatValue,
 } from "../utils/format.js";
 import { applyImageSource } from "./image.js";
+import { applyUniqueGroups } from "./unique.js";
 var warnedEmptyAlt = new WeakSet();
 var warnedImgFallback = new WeakSet();
 export function populateCard(e, t, n) {
@@ -144,4 +145,6 @@ export function populateCard(e, t, n) {
       let s = l.getAttribute("wf-algolia-if");
       evalCondition(s, t) ? showElement(l) : hideElement(l);
     }));
+  // Runs last: it needs the final text and the wf-algolia-if visibility.
+  applyUniqueGroups(e);
 }

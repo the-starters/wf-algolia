@@ -1,4 +1,4 @@
-/* @the-starters/wf-algolia v1.0.17 */
+/* @the-starters/wf-algolia v1.0.18 */
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -3341,7 +3341,7 @@
   }
 
   // package.json
-  var version2 = "1.0.17";
+  var version2 = "1.0.18";
 
   // src/render/image.js
   var autoSizedImages = /* @__PURE__ */ new WeakSet();
@@ -3416,6 +3416,55 @@
       if (autoSizedImages.has(element)) {
         element.removeAttribute("sizes");
         autoSizedImages.delete(element);
+      }
+    }
+  }
+
+  // src/render/unique.js
+  var HIDDEN_MARK = "data-wf-algolia-unique-hidden";
+  function normalizeText(value) {
+    return String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+  function applyUniqueGroups(card) {
+    if (!card?.querySelectorAll) return;
+    let groups = /* @__PURE__ */ new Map();
+    for (let element of card.querySelectorAll("[wf-algolia-unique]")) {
+      try {
+        if (element.hasAttribute(HIDDEN_MARK)) {
+          element.removeAttribute(HIDDEN_MARK);
+          if (!element.hasAttribute("wf-algolia-if") && !element.hasAttribute("wf-algolia-format"))
+            showElement(element, "");
+        }
+        if (element.style?.display === "none") continue;
+        if (!normalizeText(element.textContent)) continue;
+        let name = String(element.getAttribute("wf-algolia-unique") || "").trim();
+        if (!groups.has(name)) groups.set(name, []);
+        groups.get(name).push(element);
+      } catch (error) {
+        console.warn("[wf-algolia] populateCard unique error:", error);
+      }
+    }
+    for (let slots of groups.values()) {
+      try {
+        let seen = /* @__PURE__ */ new Set(), values = [];
+        for (let slot of slots) {
+          let key = normalizeText(slot.textContent);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          values.push({ key, text: slot.textContent });
+        }
+        slots.forEach((slot, index) => {
+          let value = values[index];
+          if (!value) {
+            slot.textContent = "";
+            hideElement(slot);
+            slot.setAttribute(HIDDEN_MARK, "");
+          } else if (normalizeText(slot.textContent) !== value.key) {
+            slot.textContent = value.text;
+          }
+        });
+      } catch (error) {
+        console.warn("[wf-algolia] populateCard unique error:", error);
       }
     }
   }
@@ -3518,6 +3567,7 @@
       let s = l.getAttribute("wf-algolia-if");
       evalCondition(s, t) ? showElement(l) : hideElement(l);
     });
+    applyUniqueGroups(e);
   }
 
   // src/render/template.js

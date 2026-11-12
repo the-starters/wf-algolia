@@ -1,10 +1,10 @@
-# wf-algolia 1.0.17 — Reconstructed Module Tree
+# wf-algolia 1.0.18 — Reconstructed Module Tree
 
 `src/app.carved.js` (5,861 lines, 273 top-level statements, 343 symbols) was
 physically split into 44 real ES modules per `docs/MODULE-MAP.md`. That split was pure
 move-and-wire: statement text is verbatim from the carved file; only `export` keywords
 and `import` declarations were added. Fork-only modules added since then bring the
-current tree to 47 files. Entry: `src/index.js` (side-effect IIFE-style entry — exports
+current tree to 48 files. Entry: `src/index.js` (side-effect IIFE-style entry — exports
 nothing; runs the init sequence inside `window.Webflow.push`).
 
 Equivalence was verified at the time of the split (1.0.4): an order-normalized line diff
@@ -46,7 +46,8 @@ landed in `src/` since, so today's `dist/` no longer matches the pre-split bundl
 | `src/filters/range.js`                    | 81    | Range min/max inputs (Finsweet rangeslider compatible), bounds registry                                                                                                         |
 | `src/filters/standalone-filter-groups.js` | 373   | Filter-groups outside browse → navigation links, nested child re-scope, parent-change events                                                                                    |
 | `src/actions/filter-actions.js`           | 329   | `syncFilterDOM`, selected-count/value renderers, `clearAllFilters`/`setFilter`/`setQuery`, staging commit/discard wrappers                                                      |
-| `src/render/populate.js`                  | 147   | `populateCard`: text/html/snippet/image/link/if binders (highlight inlined)                                                                                                     |
+| `src/render/populate.js`                  | 150   | `populateCard`: text/html/snippet/image/link/if binders (highlight inlined), then unique pass                                                                                   |
+| `src/render/unique.js`                    | 82    | `applyUniqueGroups`: `wf-algolia-unique` per-card text dedupe (compact distinct values, empty + hide the rest)                                                                  |
 | `src/render/image.js`                     | 114   | Shared image source, dynamic `srcset`, Xano WebP candidate, `sizes`, and placeholder-cleanup handling                                                                           |
 | `src/render/template.js`                  | 82    | `cloneAndPopulate`, `removeInjected`, template detach, `renderHits` (+IX2 restart, view tracking)                                                                               |
 | `src/render/detail.js`                    | 95    | Detail-mode rendering (objectID from attr/path/query, slug lookup, array-item expansion)                                                                                        |
@@ -92,7 +93,8 @@ filters/filter-group → core/events, vendor/finsweet, utils/{dom,format}, core/
 actions/filter-actions → core/events, utils/{dom,format}, core/filter-state, filters/{hierarchy,
                        filter-group, show-more, filter-sort, hidden-facet-values}  ← cycle A
 render/image         → utils/{misc,sanitize}
-render/populate      → utils/{dom,sanitize,misc,format}, render/image
+render/populate      → utils/{dom,sanitize,misc,format}, render/{image,unique}
+render/unique        → utils/dom
 render/template      → utils/{sanitize,misc,format}, insights/insights, render/populate
 render/detail        → utils/{dom,misc}, render/{populate,template}
 api/public-api       → core/{events,filter-state}, insights/insights, actions/filter-actions,

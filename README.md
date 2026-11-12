@@ -33,7 +33,7 @@ render via the complementary [wf-xano](https://github.com/the-starters/wf-xano) 
 - ✅ **Behavior-verified**: rebuilt bundle is parity-identical to upstream 1.0.4 on the
   multi-index test harness (same `WfAlgolia` API surface, same injected clone counts,
   same search hits, same console output).
-- ✅ **Module split + rename**: done — `src/` is a 47-file module tree with all 343 top-level
+- ✅ **Module split + rename**: done — `src/` is a 48-file module tree with all 343 top-level
   symbols renamed per `docs/MODULE-MAP.md`.
 - ✅ **Versioned releases**: tags start at `v1.0.4-re.0` (parity build); fork-only
   features continue upstream's numbering (starting with `v1.0.5`, which added
@@ -44,14 +44,16 @@ render via the complementary [wf-xano](https://github.com/the-starters/wf-xano) 
   `v1.0.15` honors Hidden Facet Values from Facet display Hide in dynamic Filter
   groups and typeahead; `v1.0.16` adds responsive Xano image candidates;
   `v1.0.17` skips premature Webflow IX2 restarts until the page imports its
-  interaction configuration, and catches asynchronous restart failures).
+  interaction configuration, and catches asynchronous restart failures;
+  `v1.0.18` adds `wf-algolia-unique` — per-card text dedupe, see
+  `docs/attributes-quickref.md`).
 
 ## Layout
 
 ```
 build/index.1.0.4.min.js     upstream 1.0.4 dist, byte-for-byte (behavioral reference — never edit)
 build/index.1.0.4.pretty.js  prettified copy (line numbers referenced by docs)
-src/                         deobfuscated 47-file module tree (mirrors upstream's documented layout; fork-only modules extra)
+src/                         deobfuscated 48-file module tree (mirrors upstream's documented layout; fork-only modules extra)
 docs/public-api.d.ts         upstream-published types for window.WfAlgolia (rich JSDoc)
 docs/upstream-package.json   upstream package.json (deps, build scripts)
 docs/MODULE-MAP.md           line-range → original-module map + symbol rename tables
