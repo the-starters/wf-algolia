@@ -101,6 +101,21 @@ test("a hidden duplicate is emptied so CSS :empty comma rules skip it", () => {
   assert.equal(card.elements[1].style.display, "none");
 });
 
+test("a later distinct value moves into the freed slot so adjacent-sibling separators stay correct", () => {
+  // Site CSS draws ", " after a company only when its NEXT sibling has text
+  // (p:has(+ p:not(:empty))::after). With an empty slot in the middle,
+  // "PrettyLitter" would lose its comma before "Cubicle™".
+  let card = companyCard(UNIQUE);
+
+  populateCard(card, hit("PrettyLitter", "PrettyLitter", "Cubicle™"));
+
+  assert.equal(card.elements[0].textContent, "PrettyLitter");
+  assert.equal(card.elements[1].textContent, "Cubicle™");
+  assert.equal(card.elements[1].style.display, "inline");
+  assert.equal(card.elements[2].textContent, "");
+  assert.equal(card.elements[2].style.display, "none");
+});
+
 test("distinct companies all stay visible", () => {
   let card = companyCard(UNIQUE);
 
