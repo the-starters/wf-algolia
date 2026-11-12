@@ -1,4 +1,4 @@
-/* @the-starters/wf-algolia v1.0.17 */
+/* @the-starters/wf-algolia v1.0.18 */
 (() => {
   var __create = Object.create;
   var __defProp = Object.defineProperty;
@@ -3341,7 +3341,7 @@
   }
 
   // package.json
-  var version2 = "1.0.17";
+  var version2 = "1.0.18";
 
   // src/render/image.js
   var autoSizedImages = /* @__PURE__ */ new WeakSet();
@@ -3416,6 +3416,38 @@
       if (autoSizedImages.has(element)) {
         element.removeAttribute("sizes");
         autoSizedImages.delete(element);
+      }
+    }
+  }
+
+  // src/render/unique.js
+  var HIDDEN_MARK = "data-wf-algolia-unique-hidden";
+  function normalizeText(value) {
+    return String(value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+  function applyUniqueGroups(card) {
+    if (!card?.querySelectorAll) return;
+    let elements = card.querySelectorAll("[wf-algolia-unique]"), seenByGroup = /* @__PURE__ */ new Map();
+    for (let element of elements) {
+      try {
+        if (element.hasAttribute(HIDDEN_MARK)) {
+          element.removeAttribute(HIDDEN_MARK);
+          if (!element.hasAttribute("wf-algolia-if")) showElement(element, "");
+        }
+        if (element.style?.display === "none") continue;
+        let key = normalizeText(element.textContent);
+        if (!key) continue;
+        let group = String(
+          element.getAttribute("wf-algolia-unique") || ""
+        ).trim(), seen = seenByGroup.get(group);
+        if (!seen) seenByGroup.set(group, seen = /* @__PURE__ */ new Set());
+        if (seen.has(key)) {
+          element.textContent = "";
+          hideElement(element);
+          element.setAttribute(HIDDEN_MARK, "");
+        } else seen.add(key);
+      } catch (error) {
+        console.warn("[wf-algolia] populateCard unique error:", error);
       }
     }
   }
@@ -3518,6 +3550,7 @@
       let s = l.getAttribute("wf-algolia-if");
       evalCondition(s, t) ? showElement(l) : hideElement(l);
     });
+    applyUniqueGroups(e);
   }
 
   // src/render/template.js

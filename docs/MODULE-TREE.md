@@ -46,7 +46,8 @@ landed in `src/` since, so today's `dist/` no longer matches the pre-split bundl
 | `src/filters/range.js`                    | 81    | Range min/max inputs (Finsweet rangeslider compatible), bounds registry                                                                                                         |
 | `src/filters/standalone-filter-groups.js` | 373   | Filter-groups outside browse → navigation links, nested child re-scope, parent-change events                                                                                    |
 | `src/actions/filter-actions.js`           | 329   | `syncFilterDOM`, selected-count/value renderers, `clearAllFilters`/`setFilter`/`setQuery`, staging commit/discard wrappers                                                      |
-| `src/render/populate.js`                  | 147   | `populateCard`: text/html/snippet/image/link/if binders (highlight inlined)                                                                                                     |
+| `src/render/populate.js`                  | 150   | `populateCard`: text/html/snippet/image/link/if binders (highlight inlined), then unique pass                                                                                   |
+| `src/render/unique.js`                    | 54    | `applyUniqueGroups`: `wf-algolia-unique` per-card text dedupe (hide + empty repeats)                                                                                            |
 | `src/render/image.js`                     | 114   | Shared image source, dynamic `srcset`, Xano WebP candidate, `sizes`, and placeholder-cleanup handling                                                                           |
 | `src/render/template.js`                  | 82    | `cloneAndPopulate`, `removeInjected`, template detach, `renderHits` (+IX2 restart, view tracking)                                                                               |
 | `src/render/detail.js`                    | 95    | Detail-mode rendering (objectID from attr/path/query, slug lookup, array-item expansion)                                                                                        |
@@ -92,7 +93,8 @@ filters/filter-group → core/events, vendor/finsweet, utils/{dom,format}, core/
 actions/filter-actions → core/events, utils/{dom,format}, core/filter-state, filters/{hierarchy,
                        filter-group, show-more, filter-sort, hidden-facet-values}  ← cycle A
 render/image         → utils/{misc,sanitize}
-render/populate      → utils/{dom,sanitize,misc,format}, render/image
+render/populate      → utils/{dom,sanitize,misc,format}, render/{image,unique}
+render/unique        → utils/dom
 render/template      → utils/{sanitize,misc,format}, insights/insights, render/populate
 render/detail        → utils/{dom,misc}, render/{populate,template}
 api/public-api       → core/{events,filter-state}, insights/insights, actions/filter-actions,
